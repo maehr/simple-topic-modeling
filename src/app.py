@@ -12,6 +12,7 @@ if not platform.system() == "Emscripten":
     import pyLDAvis
     import pyLDAvis.lda_model
 
+# Global variables for stop words and n-gram options
 STOP_WORDS = {
     "english": "english",
     "german": german,
@@ -29,6 +30,15 @@ NGRAM_OPTIONS = {
 
 
 def fig_to_base64(fig):
+    """
+    Convert a Matplotlib figure to Base64 encoding.
+
+    Parameters:
+        fig (matplotlib.figure.Figure): The figure to convert.
+
+    Returns:
+        str: Base64 encoded string of the figure.
+    """
     img = BytesIO()
     fig.savefig(img, format="png")
     img.seek(0)
@@ -36,12 +46,32 @@ def fig_to_base64(fig):
 
 
 def df_to_base64(df):
+    """
+    Convert a Pandas DataFrame to a Base64 encoded CSV string.
+
+    Parameters:
+        df (pd.DataFrame): DataFrame to convert.
+
+    Returns:
+        str: Base64 encoded string of the DataFrame in CSV format.
+    """
     csv_buffer = StringIO()
     df.to_csv(csv_buffer, index=False)
     return base64.b64encode(csv_buffer.getvalue().encode()).decode()
 
 
 def create_topic_df(topic, vectorizer, n_top_words=100):
+    """
+    Create a DataFrame containing the top words for a given topic.
+
+    Parameters:
+        topic (array): Array of word probabilities for a single topic.
+        vectorizer (CountVectorizer): The vectorizer used for text processing.
+        n_top_words (int, optional): Number of top words to include. Defaults to 100.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the top words and their probabilities.
+    """
     normalized_topic = topic / topic.sum()
     top_indices = normalized_topic.argsort()[-n_top_words:]
     top_words = [
@@ -52,7 +82,15 @@ def create_topic_df(topic, vectorizer, n_top_words=100):
 
 
 def main():
+    """
+    Main function to run the Simple Topic Modeling app.
+    The app allows users to upload a corpus of text documents and discover topics within them using Latent Dirichlet Allocation (LDA).
+    It provides options for preprocessing the corpus, setting the model parameters, and visualizing the results.
+    """
+    # Set page config
     st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
+
+    # Sidebar
     st.sidebar.title("About")
     st.sidebar.markdown(
         """
@@ -68,6 +106,7 @@ def main():
         icon="ℹ️",
     )
 
+    # Main page
     st.title("Simple Topic Modeling")
     st.markdown(
         """
@@ -77,20 +116,12 @@ def main():
         The goal of topic modeling is to find a set of topics that best describes the corpus.
         """
     )
-
     st.subheader("Step 1: Upload Your Text Files")
-    st.markdown(
-        """
-        Upload your text files containing the documents you want to discover topics for. 
-        """
-    )
-
     uploaded_files = st.file_uploader(
-        "Upload files containing text data",
+        "Upload your text files containing the documents you want to discover topics for.",
         type=["txt", "text", "md", "markdown", "rtf", "csv", "tsv", "log"],
         accept_multiple_files=True,
     )
-
     if uploaded_files:
         data = [
             {"filename": file.name, "content": file.read().decode("utf-8")}
@@ -102,12 +133,10 @@ def main():
         st.write(
             f"Average Document Length: {df['content'].apply(lambda x: len(x.split())).mean():.2f} words"
         )
-
         st.subheader("Step 2: Preprocessing the corpus")
-        st.text(
+        st.markdown(
             "Choose the preprocessing options that best suit your data. Removing stop words and short words can help improve the quality of the topics generated."
         )
-
         remove_stop_words = st.checkbox("Remove Stop Words", value=True)
         if remove_stop_words:
             language = st.selectbox("Choose Language for Stop Words", STOP_WORDS.keys())
@@ -122,7 +151,6 @@ def main():
                 word.strip()
                 for word in st.text_area("Enter Custom Stop Words").split(",")
             ]
-
         st.markdown(
             """
             Choose the n-gram range for the vectorizer. 
@@ -134,7 +162,6 @@ def main():
         )
         ngram = st.selectbox("N-Gram Range", list(NGRAM_OPTIONS.keys()))
         ngram_range = NGRAM_OPTIONS[ngram]
-
         st.subheader("Step 3: Setting the model parameters")
         st.markdown(
             """
@@ -144,7 +171,6 @@ def main():
         )
         num_topics = st.slider("Number of Topics", 1, 20, 5)
         max_iter = st.slider("Max Iterations", 10, 500, 50)
-
         st.subheader("Step 4: Run the topic model and visualize the results")
         st.markdown(
             "Click the button below to run the topic model and discover topics in your corpus. This may take a while depending on the number of documents and the number of topics."
@@ -167,18 +193,14 @@ def main():
                 ngram_range=ngram_range,
             )
             dtm = vectorizer.fit_transform(df["content"])
-
             lda = LatentDirichletAllocation(n_components=num_topics, max_iter=max_iter)
             lda_output = lda.fit_transform(dtm)
-
             dominant_topic = lda_output.argmax(axis=1)
             topic_weights = lda_output.max(axis=1)
-
             df_topic_weights = pd.DataFrame(
                 {"Dominant_Topic": dominant_topic, "Topic_Weight": topic_weights}
             )
             df_topic_weights["Filename"] = df["filename"]
-
             df_topic_distribution = pd.DataFrame(
                 {
                     "Document_Index": df_topic_weights.index,
@@ -187,7 +209,6 @@ def main():
                     "Topic_Weight": df_topic_weights["Topic_Weight"],
                 }
             )
-
             df_all_topic_weights = pd.DataFrame(
                 lda_output, columns=[i + 1 for i in range(lda_output.shape[1])]
             )
@@ -223,17 +244,13 @@ def main():
 
             for i, topic in enumerate(lda.components_):
                 st.subheader(f"Topic number {i+1}")
-
                 topic_df = create_topic_df(topic, vectorizer, n_top_words=100)
-
-                # Word Cloud
                 normalized_topic = topic / topic.sum()
                 top_indices = normalized_topic.argsort()[-10:]
                 top_words = [
                     vectorizer.get_feature_names_out()[index] for index in top_indices
                 ]
                 top_probs = [normalized_topic[index] for index in top_indices]
-
                 # Bar Chart
                 fig, ax = plt.subplots(figsize=(10, 5))
                 ax.barh(top_words, top_probs)
@@ -244,7 +261,6 @@ def main():
                 barchart_href = f'<a href="data:image/png;base64,{barchart_base64}" download="barchart_topic_{i+1}.png">Download Bar Chart for Topic {i+1}</a>'
                 st.markdown(barchart_href, unsafe_allow_html=True)
                 plt.close(fig)
-
                 # Download top 100 words for the topic as CSV
                 topic_csv_base64 = df_to_base64(topic_df)
                 topic_csv_href = f'<a href="data:file/csv;base64,{topic_csv_base64}" download="top_words_topic_{i+1}.csv">Download Top 100 Words for Topic {i+1}</a>'

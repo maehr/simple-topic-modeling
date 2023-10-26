@@ -1,8 +1,8 @@
 contact_links:
-  - name: Are you looking for documentation on REPO_NAME?
-    url: https://USERNAME.github.io/REPO_NAME
-    about: Please see the documentation for REPO_NAME on its GitHub Pages page.
-  - name: Do want to discuss REPO_NAME with the community?
-    url: https://github.com/USERNAME/REPO_NAME/discussions
-    about: Please see the discussions page for REPO_NAME.
+  - name: Are you looking for documentation on simple-topic-modeling?
+    url: https://maehr.github.io/simple-topic-modeling
+    about: Please see the documentation for simple-topic-modeling on its GitHub Pages page.
+  - name: Do want to discuss simple-topic-modeling with the community?
+    url: https://github.com/maehr/simple-topic-modeling/discussions
+    about: Please see the discussions page for simple-topic-modeling.
 blank_issues_enabled: true

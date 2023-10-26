@@ -1,21 +1,21 @@
 {
-	"name": "REPO_NAME",
-	"description": "SHORT_DESCRIPTION",
-	"author": "FULLNAME <[INSERT CONTACT METHOD]>",
+	"name": "simple-topic-modeling",
+	"description": "This app is a simple topic modeling tool that uses Latent Dirichlet Allocation (LDA) to discover topics in a corpus of text documents.",
+	"author": "Moritz Mähr <moritz.maehr@gmail.com>",
 	"version": "0.0.1",
-	"url": "https://github.com/USERNAME/REPO_NAME/issues",
+	"url": "https://github.com/maehr/simple-topic-modeling/issues",
 	"license": "AGPL-3.0",
 	"scripts": {
-		"check": "prettier --ignore-path .gitignore  --check . '!{CODE_OF_CONDUCT.md,LICENSE.md,_layouts/default.html}'",
+		"check": "prettier --ignore-path .gitignore --ignore-path .prettierignore --check .",
 		"commit": "cz",
-		"format": "prettier --ignore-path .gitignore --write . '!{CODE_OF_CONDUCT.md,LICENSE.md,_layouts/default.html}'",
+		"format": "prettier --ignore-path .gitignore --ignore-path .prettierignore --write .",
 		"prepare": "husky install"
 	},
 	"devDependencies": {
 		"commitizen": "^4.3.0",
 		"cz-conventional-changelog": "^3.3.0",
 		"husky": "^8.0.3",
-		"prettier": "^2.8.8"
+		"prettier": "^3.0.3"
 	},
 	"type": "module",
 	"config": {

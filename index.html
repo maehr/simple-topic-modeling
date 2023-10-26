@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+		<title>Simple Topic Modeling</title>
+		<meta name="description" content="A simple topic modeling application." />
+		<link rel="canonical" href="https://maehr.github.io/simple-topic-modeling/" />
+		<link href="assets/stlite/build/stlite.css" rel="stylesheet" />
+		<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+		<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+		<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+		<link rel="manifest" href="site.webmanifest" />
+	</head>
+
+	<body>
+		<main id="main"></main>
+		<script src="assets/stlite/build/stlite.js"></script>
+		<script>
+			stlite.mount(
+				{
+					// pyodideUrl: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js",
+					requirements: [
+						'pandas',
+						'scikit-learn',
+						'matplotlib'
+						// "pyLDAvis",
+					],
+					entrypoint: 'app.py',
+					files: {
+						//                     "app.py": `
+						// import streamlit as st ...
+						//                         `,
+						'app.py': {
+							url: 'src/app.py'
+						},
+						'utils/stopwords.py': {
+							url: 'src/utils/stopwords.py'
+						}
+					}
+				},
+				document.getElementById('main')
+			);
+		</script>
+	</body>
+</html>

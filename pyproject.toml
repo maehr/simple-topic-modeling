@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "simple-topic-modeling"
+version = "0.1.0"
+description = "tbd"
+authors = ["Moritz Mähr <moritz.maehr@gmail.com>"]
+license = "AGPL-3.0"
+readme = "README.md"
+homepage = "https://maehr.github.io/simple-topic-modeling"
+repository = "https://github.com/maehr/simple-topic-modeling"
+keywords = ["topic modeling", "lda", "streamlit"]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+streamlit = "^1.27.2"
+pandas = "^2.1.1"
+matplotlib = "^3.8.0"
+numpy = "^1.26.1"
+scikit-learn = "^1.3.2"
+pyldavis = "^3.4.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/maehr/simple-topic-modeling/issues"

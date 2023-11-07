@@ -1,16 +1,12 @@
 import base64
-import platform
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from utils.stopwords import german, french, spanish
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
-from io import StringIO, BytesIO
-
-if not platform.system() == "Emscripten":
-    import pyLDAvis
-    import pyLDAvis.lda_model
+from io import StringIO
+import pyLDAvis
+import pyLDAvis.lda_model
 
 # Global variables for stop words and n-gram options
 STOP_WORDS = {
@@ -27,59 +23,6 @@ NGRAM_OPTIONS = {
     "bigram": (2, 2),
     "trigram": (3, 3),
 }
-
-
-def fig_to_base64(fig):
-    """
-    Convert a Matplotlib figure to Base64 encoding.
-
-    Parameters:
-        fig (matplotlib.figure.Figure): The figure to convert.
-
-    Returns:
-        str: Base64 encoded string of the figure.
-    """
-    img = BytesIO()
-    fig.savefig(img, format="png")
-    img.seek(0)
-    return base64.b64encode(img.read()).decode()
-
-
-def df_to_base64(df):
-    """
-    Convert a Pandas DataFrame to a Base64 encoded CSV string.
-
-    Parameters:
-        df (pd.DataFrame): DataFrame to convert.
-
-    Returns:
-        str: Base64 encoded string of the DataFrame in CSV format.
-    """
-    csv_buffer = StringIO()
-    df.to_csv(csv_buffer, index=False)
-    return base64.b64encode(csv_buffer.getvalue().encode()).decode()
-
-
-def create_topic_df(topic, vectorizer, n_top_words=100):
-    """
-    Create a DataFrame containing the top words for a given topic.
-
-    Parameters:
-        topic (array): Array of word probabilities for a single topic.
-        vectorizer (CountVectorizer): The vectorizer used for text processing.
-        n_top_words (int, optional): Number of top words to include. Defaults to 100.
-
-    Returns:
-        pd.DataFrame: DataFrame containing the top words and their probabilities.
-    """
-    normalized_topic = topic / topic.sum()
-    top_indices = normalized_topic.argsort()[-n_top_words:]
-    top_words = [
-        vectorizer.get_feature_names_out()[index] for index in reversed(top_indices)
-    ]
-    top_probs = [normalized_topic[index] for index in reversed(top_indices)]
-    return pd.DataFrame({"Word": top_words, "Probability": top_probs})
-
 
 def main():
     """
@@ -175,7 +118,8 @@ def main():
         st.markdown(
             "Click the button below to run the topic model and discover topics in your corpus. This may take a while depending on the number of documents and the number of topics."
         )
-        if st.button("Compute topic model"):
+
+        if st.button('Compute Topic Model (BE PATIENT)'):
             st.text("Processing...")
             token_pattern = (
                 r"(?u)\b[a-zA-Z][a-zA-Z0-9_]{2,}\b"
@@ -225,46 +169,30 @@ def main():
             ]
             df_topic_distribution = df_topic_distribution[cols]
 
-            if not platform.system() == "Emscripten":
-                st.subheader("Topics")
-                prepared_pyLDAvis_data = pyLDAvis.lda_model.prepare(
-                    lda, dtm, vectorizer
-                )
-                pyLDAvis_html = pyLDAvis.prepared_data_to_html(prepared_pyLDAvis_data)
-                st.components.v1.html(
-                    pyLDAvis_html, width=1200, height=1000, scrolling=True
-                )
+            st.subheader("Topics")
+            prepared_pyLDAvis_data = pyLDAvis.lda_model.prepare(lda, dtm, vectorizer)
+            pyLDAvis_html = pyLDAvis.prepared_data_to_html(prepared_pyLDAvis_data)
+            st.components.v1.html(
+                pyLDAvis_html, width=1200, height=800, scrolling=True
+            )
 
-            st.subheader("Topic Distribution Over Documents")
-            st.dataframe(df_topic_distribution)
-
-            csv_str_base64 = df_to_base64(df_topic_distribution)
-            csv_href = f'<a href="data:file/csv;base64,{csv_str_base64}" download="topic_distribution_over_documents.csv">Download Topic Distribution Over Documents</a>'
-            st.markdown(csv_href, unsafe_allow_html=True)
-
-            for i, topic in enumerate(lda.components_):
-                st.subheader(f"Topic number {i+1}")
-                topic_df = create_topic_df(topic, vectorizer, n_top_words=100)
-                normalized_topic = topic / topic.sum()
-                top_indices = normalized_topic.argsort()[-10:]
-                top_words = [
-                    vectorizer.get_feature_names_out()[index] for index in top_indices
-                ]
-                top_probs = [normalized_topic[index] for index in top_indices]
-                # Bar Chart
-                fig, ax = plt.subplots(figsize=(10, 5))
-                ax.barh(top_words, top_probs)
-                ax.set_xlabel("Probability")
-                ax.set_title(f"Top Words for Topic {i+1}")
-                st.pyplot(fig)
-                barchart_base64 = fig_to_base64(fig)
-                barchart_href = f'<a href="data:image/png;base64,{barchart_base64}" download="barchart_topic_{i+1}.png">Download Bar Chart for Topic {i+1}</a>'
-                st.markdown(barchart_href, unsafe_allow_html=True)
-                plt.close(fig)
-                # Download top 100 words for the topic as CSV
-                topic_csv_base64 = df_to_base64(topic_df)
-                topic_csv_href = f'<a href="data:file/csv;base64,{topic_csv_base64}" download="top_words_topic_{i+1}.csv">Download Top 100 Words for Topic {i+1}</a>'
-                st.markdown(topic_csv_href, unsafe_allow_html=True)
+            st.subheader("Download Visualization")
+            html_buffer = StringIO()
+            pyLDAvis.save_html(prepared_pyLDAvis_data, html_buffer)
+            html_buffer.seek(0)
+            html_str = html_buffer.read()
+            html_base64 = base64.b64encode(html_str.encode()).decode()
+            html_href = f'<a href="data:text/html;base64,{html_base64}" download="topic_model.html">Download Topic Model</a>'
+            st.markdown(html_href, unsafe_allow_html=True)
+            
+            st.subheader("Download Topic Model")
+            json_buffer = StringIO()
+            pyLDAvis.save_json(prepared_pyLDAvis_data, json_buffer)
+            json_buffer.seek(0)
+            json_str = json_buffer.read()
+            json_base64 = base64.b64encode(json_str.encode()).decode()
+            json_href = f'<a href="data:file/json;base64,{json_base64}" download="topic_model.json">Download Topic Model</a>'
+            st.markdown(json_href, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":

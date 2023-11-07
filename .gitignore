@@ -434,3 +434,4 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/git,node,linux,macos,dotenv,windows,visualstudiocode,python,jupyternotebooks
 
 !assets/stlite/build/
+!assets/dist/

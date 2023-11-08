@@ -129,7 +129,6 @@ def main():
         if button:
             st.text("Processing...")
         if button:
-            st.text("Done processing!")
             token_pattern = (
                 r"(?u)\b[a-zA-Z][a-zA-Z0-9_]{2,}\b"
                 if remove_short_words_and_numbers
@@ -178,9 +177,10 @@ def main():
             ]
             df_topic_distribution = df_topic_distribution[cols]
 
-            st.subheader("Topics")
             prepared_pyLDAvis_data = pyLDAvis.lda_model.prepare(lda, dtm, vectorizer)
             pyLDAvis_html = pyLDAvis.prepared_data_to_html(prepared_pyLDAvis_data)
+            st.text("Done processing!")
+            st.subheader("Topics")
             st.components.v1.html(pyLDAvis_html, width=1200, height=800, scrolling=True)
 
             st.subheader("Download Visualization")

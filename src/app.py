@@ -24,6 +24,7 @@ NGRAM_OPTIONS = {
     "trigram": (3, 3),
 }
 
+
 def main():
     """
     Main function to run the Simple Topic Modeling app.
@@ -119,8 +120,16 @@ def main():
             "Click the button below to run the topic model and discover topics in your corpus. This may take a while depending on the number of documents and the number of topics."
         )
 
-        if st.button('Compute Topic Model (BE PATIENT)'):
+        st.warning(
+            "The app does not give visual feedback while processing.",
+            icon="🚨",
+        )
+
+        button = st.button("Compute Topic Model")
+        if button:
             st.text("Processing...")
+        if button:
+            st.text("Done processing!")
             token_pattern = (
                 r"(?u)\b[a-zA-Z][a-zA-Z0-9_]{2,}\b"
                 if remove_short_words_and_numbers
@@ -172,9 +181,7 @@ def main():
             st.subheader("Topics")
             prepared_pyLDAvis_data = pyLDAvis.lda_model.prepare(lda, dtm, vectorizer)
             pyLDAvis_html = pyLDAvis.prepared_data_to_html(prepared_pyLDAvis_data)
-            st.components.v1.html(
-                pyLDAvis_html, width=1200, height=800, scrolling=True
-            )
+            st.components.v1.html(pyLDAvis_html, width=1200, height=800, scrolling=True)
 
             st.subheader("Download Visualization")
             html_buffer = StringIO()
@@ -182,9 +189,9 @@ def main():
             html_buffer.seek(0)
             html_str = html_buffer.read()
             html_base64 = base64.b64encode(html_str.encode()).decode()
-            html_href = f'<a href="data:text/html;base64,{html_base64}" download="topic_model.html">Download Topic Model</a>'
+            html_href = f'<a href="data:text/html;base64,{html_base64}" download="topic_model.html">Download Visualization</a>'
             st.markdown(html_href, unsafe_allow_html=True)
-            
+
             st.subheader("Download Topic Model")
             json_buffer = StringIO()
             pyLDAvis.save_json(prepared_pyLDAvis_data, json_buffer)
@@ -193,6 +200,19 @@ def main():
             json_base64 = base64.b64encode(json_str.encode()).decode()
             json_href = f'<a href="data:file/json;base64,{json_base64}" download="topic_model.json">Download Topic Model</a>'
             st.markdown(json_href, unsafe_allow_html=True)
+
+            st.subheader("Download Topic Distribution")
+            csv_buffer = StringIO()
+            df_topic_distribution.to_csv(csv_buffer, index=False)
+            csv_buffer.seek(0)
+            csv_str = csv_buffer.read()
+            csv_base64 = base64.b64encode(csv_str.encode()).decode()
+            csv_href = f'<a href="data:file/csv;base64,{csv_base64}" download="topic_distribution.csv">Download Topic Distribution</a>'
+            st.markdown(csv_href, unsafe_allow_html=True)
+            st.warning(
+                "The numbering of the topics in the topic distribution does not necessarily correspond to the numbering of the topics in the visualization. We are working on this issue.",
+                icon="🚨",
+            )
 
 
 if __name__ == "__main__":

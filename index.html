@@ -20,20 +20,15 @@
 		<script>
 			stlite.mount(
 				{
-					// pyodideUrl: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js",
 					requirements: [
 						'pandas',
 						'scikit-learn',
-						'matplotlib'
-						// "pyLDAvis",
+						'https://maehr.github.io/simple-topic-modeling/assets/dist/pyLDAvis-3.4.1-py2.py3-none-any.whl'
 					],
 					entrypoint: 'app.py',
 					files: {
-						//                     "app.py": `
-						// import streamlit as st ...
-						//                         `,
 						'app.py': {
-							url: 'src/app.py'
+							url: 'src/app.py?nocache=1'
 						},
 						'utils/stopwords.py': {
 							url: 'src/utils/stopwords.py'

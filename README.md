@@ -7,7 +7,7 @@ This app is a simple topic modeling tool that uses Latent Dirichlet Allocation (
 [![GitHub stars](https://img.shields.io/github/stars/maehr/simple-topic-modeling.svg)](https://github.com/maehr/simple-topic-modeling/stargazers)
 [![GitHub license](https://img.shields.io/github/license/maehr/simple-topic-modeling.svg)](https://github.com/maehr/simple-topic-modeling/blob/main/LICENSE.md)
 
-## Demo
+## Demo
 
 You can try out the app [here](https://maehr.github.io/simple-topic-modeling/). If you want to visualize the topics with the more advanced [PyLDAvis](https://github.com/bmabey/pyLDAvis) library, you need to run the app locally.
 

@@ -11,7 +11,7 @@ keywords = ["topic modeling", "lda", "streamlit"]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
-streamlit = "^1.28.1"
+streamlit = "^1.30.0"
 pandas = "^2.1.2"
 scikit-learn = "^1.3.2"
 pyldavis = "^3.4.1"

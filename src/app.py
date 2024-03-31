@@ -86,15 +86,14 @@ def main():
             language = st.selectbox("Choose Language for Stop Words", STOP_WORDS.keys())
             use_custom_stop_words = st.checkbox("Use a Custom Stop Words List")
             custom_stop_words = []
-
+            if use_custom_stop_words:
+                custom_stop_words = [
+                    word.strip()
+                    for word in st.text_area("Enter Custom Stop Words separated by a comma").split(",")
+                ]
         remove_short_words_and_numbers = st.checkbox(
             "Remove Short Words and Numbers", value=True
         )
-        if remove_stop_words and use_custom_stop_words:
-            custom_stop_words = [
-                word.strip()
-                for word in st.text_area("Enter Custom Stop Words").split(",")
-            ]
         st.markdown(
             """
             Choose the n-gram range for the vectorizer. 
@@ -119,12 +118,10 @@ def main():
         st.markdown(
             "Click the button below to run the topic model and discover topics in your corpus. This may take a while depending on the number of documents and the number of topics."
         )
-
         st.warning(
             "The app does not give visual feedback while processing.",
             icon="🚨",
         )
-
         button = st.button("Compute Topic Model")
         if button:
             st.text("Processing...")
@@ -176,13 +173,11 @@ def main():
                 if col not in ["filename", "Dominant_Topic"]
             ]
             df_topic_distribution = df_topic_distribution[cols]
-
             prepared_pyLDAvis_data = pyLDAvis.lda_model.prepare(lda, dtm, vectorizer)
             pyLDAvis_html = pyLDAvis.prepared_data_to_html(prepared_pyLDAvis_data)
             st.text("Done processing!")
             st.subheader("Topics")
             st.components.v1.html(pyLDAvis_html, width=1200, height=800, scrolling=True)
-
             st.subheader("Download Visualization")
             html_buffer = StringIO()
             pyLDAvis.save_html(prepared_pyLDAvis_data, html_buffer)
@@ -191,7 +186,6 @@ def main():
             html_base64 = base64.b64encode(html_str.encode()).decode()
             html_href = f'<a href="data:text/html;base64,{html_base64}" download="topic_model.html">Download Visualization</a>'
             st.markdown(html_href, unsafe_allow_html=True)
-
             st.subheader("Download Topic Model")
             json_buffer = StringIO()
             pyLDAvis.save_json(prepared_pyLDAvis_data, json_buffer)
@@ -200,7 +194,6 @@ def main():
             json_base64 = base64.b64encode(json_str.encode()).decode()
             json_href = f'<a href="data:file/json;base64,{json_base64}" download="topic_model.json">Download Topic Model</a>'
             st.markdown(json_href, unsafe_allow_html=True)
-
             st.subheader("Download Topic Distribution")
             csv_buffer = StringIO()
             df_topic_distribution.to_csv(csv_buffer, index=False)

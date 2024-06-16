@@ -8,11 +8,12 @@ import streamlit as st
 import streamlit.components.v1 as components
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer
-from utils.stopwords import french, german, spanish
+from utils.stopwords import english, french, german, spanish
 
 # Global variables for stop words and n-gram options
 STOP_WORDS = {
-    "english": "english",
+    "custom": [],
+    "english": english,
     "german": german,
     "french": french,
     "spanish": spanish,
@@ -84,23 +85,16 @@ def main():
             "Choose the preprocessing options that best suit your data. Removing stop words and short words can help improve the quality of the topics generated."
         )
         remove_stop_words = st.checkbox("Remove Stop Words", value=True)
+        stop_words = []
         if remove_stop_words:
             language = st.selectbox("Choose Language for Stop Words", STOP_WORDS.keys())
-            use_custom_stop_words = st.checkbox("Use a Custom Stop Words List")
-            custom_stop_words = []
-            if use_custom_stop_words:
-                custom_stop_words = [
-                    word.strip()
-                    for word in st.text_area(
-                        "Enter Custom Stop Words separated by a comma"
-                    ).split(",")
-                ]
-            if use_custom_stop_words and custom_stop_words:
-                stop_words = custom_stop_words
-            else:
-                stop_words = STOP_WORDS[language]
-        else:
-            stop_words = None
+            stop_words = (
+                STOP_WORDS[language] if isinstance(STOP_WORDS[language], list) else []
+            )
+            custom_stop_words = st.text_area(
+                "Edit Stop Words (separated by a comma)", value=",".join(stop_words)
+            )
+            stop_words = [word.strip() for word in custom_stop_words.split(",")]
 
         remove_short_words_and_numbers = st.checkbox(
             "Remove Short Words and Numbers", value=True
@@ -144,7 +138,7 @@ def main():
             )
             vectorizer = CountVectorizer(
                 lowercase=True,
-                stop_words=stop_words,
+                stop_words=stop_words if stop_words else None,
                 token_pattern=token_pattern,
                 ngram_range=ngram_range,
             )

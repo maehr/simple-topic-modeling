@@ -1,16 +1,19 @@
 import base64
-import streamlit as st
-import pandas as pd
-from utils.stopwords import german, french, spanish
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
 from io import StringIO
+
+import pandas as pd
 import pyLDAvis
 import pyLDAvis.lda_model
+import streamlit as st
+import streamlit.components.v1 as components
+from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.feature_extraction.text import CountVectorizer
+from utils.stopwords import english, french, german, spanish
 
 # Global variables for stop words and n-gram options
 STOP_WORDS = {
-    "english": "english",
+    "custom": [],
+    "english": english,
     "german": german,
     "french": french,
     "spanish": spanish,
@@ -82,15 +85,17 @@ def main():
             "Choose the preprocessing options that best suit your data. Removing stop words and short words can help improve the quality of the topics generated."
         )
         remove_stop_words = st.checkbox("Remove Stop Words", value=True)
+        stop_words = []
         if remove_stop_words:
             language = st.selectbox("Choose Language for Stop Words", STOP_WORDS.keys())
-            use_custom_stop_words = st.checkbox("Use a Custom Stop Words List")
-            custom_stop_words = []
-            if use_custom_stop_words:
-                custom_stop_words = [
-                    word.strip()
-                    for word in st.text_area("Enter Custom Stop Words separated by a comma").split(",")
-                ]
+            stop_words = (
+                STOP_WORDS[language] if isinstance(STOP_WORDS[language], list) else []
+            )
+            custom_stop_words = st.text_area(
+                "Edit Stop Words (separated by a comma)", value=",".join(stop_words)
+            )
+            stop_words = [word.strip() for word in custom_stop_words.split(",")]
+
         remove_short_words_and_numbers = st.checkbox(
             "Remove Short Words and Numbers", value=True
         )
@@ -133,11 +138,7 @@ def main():
             )
             vectorizer = CountVectorizer(
                 lowercase=True,
-                stop_words=custom_stop_words
-                if use_custom_stop_words
-                else STOP_WORDS[language]
-                if remove_stop_words
-                else None,
+                stop_words=stop_words if stop_words else None,
                 token_pattern=token_pattern,
                 ngram_range=ngram_range,
             )
@@ -177,7 +178,7 @@ def main():
             pyLDAvis_html = pyLDAvis.prepared_data_to_html(prepared_pyLDAvis_data)
             st.text("Done processing!")
             st.subheader("Topics")
-            st.components.v1.html(pyLDAvis_html, width=1200, height=800, scrolling=True)
+            components.html(pyLDAvis_html, width=1200, height=800, scrolling=True)
             st.subheader("Download Visualization")
             html_buffer = StringIO()
             pyLDAvis.save_html(prepared_pyLDAvis_data, html_buffer)

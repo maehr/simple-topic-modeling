@@ -40,7 +40,7 @@ uv run streamlit run src/app.py
 If you want to contribute to this project, you can use the following commands to test the browser version of the app.
 
 ```bash
-python3 -m http.server 8000 --directory .
+uv run python3 -m http.server 8000 --directory .
 ```
 
 To format the code, use the following commands.

@@ -1,27 +1,47 @@
-[tool.poetry]
+[project]
 name = "simple-topic-modeling"
 version = "0.1.0"
-description = "tbd"
-authors = ["Moritz Mähr <moritz.maehr@gmail.com>"]
-license = "AGPL-3.0"
+description = "A simple topic modeling tool that uses Latent Dirichlet Allocation (LDA) to discover topics in a corpus of text documents."
+authors = [
+    { name = "Moritz Mähr", email = "moritz.maehr@gmail.com" }
+]
+license = { text = "AGPL-3.0" }
 readme = "README.md"
-homepage = "https://maehr.github.io/simple-topic-modeling"
-repository = "https://github.com/maehr/simple-topic-modeling"
+requires-python = ">=3.11"
 keywords = ["topic modeling", "lda", "streamlit"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "streamlit>=1.48.1",
+    "pandas>=2.3.2",
+    "scikit-learn>=1.7.1",
+    "pyldavis>=3.4.1",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.11,<3.13"
-streamlit = "^1.30.0"
-pandas = "^2.1.2"
-scikit-learn = "^1.3.2"
-pyldavis = "^3.4.1"
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.12.9",
+]
 
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.1.4"
+[dependency-groups]
+dev = [
+    "ruff>=0.12.9",
+]
+
+[project.urls]
+Homepage = "https://maehr.github.io/simple-topic-modeling"
+Repository = "https://github.com/maehr/simple-topic-modeling"
+"Bug Tracker" = "https://github.com/maehr/simple-topic-modeling/issues"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry.urls]
-"Bug Tracker" = "https://github.com/maehr/simple-topic-modeling/issues"
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

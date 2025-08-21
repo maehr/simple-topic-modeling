@@ -89,7 +89,9 @@ def main():
             if use_custom_stop_words:
                 custom_stop_words = [
                     word.strip()
-                    for word in st.text_area("Enter Custom Stop Words separated by a comma").split(",")
+                    for word in st.text_area(
+                        "Enter Custom Stop Words separated by a comma"
+                    ).split(",")
                 ]
         remove_short_words_and_numbers = st.checkbox(
             "Remove Short Words and Numbers", value=True

@@ -1,5 +1,5 @@
-# `@stlite/mountable`
+# `@stlite/browser`
 
-Mount stlite on a static page.
+Mount a Streamlit app on a static web page.
 
 See https://github.com/whitphx/stlite#readme

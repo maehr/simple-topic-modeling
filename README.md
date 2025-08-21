@@ -15,10 +15,10 @@ You can try out the app [here](https://maehr.github.io/simple-topic-modeling/). 
 
 This section provides instructions on how to install the dependencies required to run the app locally. Make sure you have [Python](https://www.python.org/downloads/) 3.11 or higher and [Node.js](https://nodejs.org/en/download/) installed before proceeding.
 
-Use the package manager [poetry](https://python-poetry.org/docs/) to install all Python dependencies. Run the following command in your terminal:
+Use the package manager [uv](https://docs.astral.sh/uv/) to install all Python dependencies. Run the following command in your terminal:
 
 ```bash
-poetry install
+uv sync
 ```
 
 Use the package manager [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) to install more dev dependencies like [prettier](https://prettier.io/). Run the following command in your terminal:
@@ -32,7 +32,7 @@ npm install
 To run the app locally, use the following command.
 
 ```bash
-poetry run streamlit run src/app.py
+uv run streamlit run src/app.py
 ```
 
 ## Development
@@ -46,7 +46,7 @@ python3 -m http.server 8000 --directory .
 To format the code, use the following commands.
 
 ```bash
-poetry run ruff format
+uv run ruff format
 npm format
 ```
 

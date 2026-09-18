@@ -437,5 +437,8 @@ $RECYCLE.BIN/
 # It is never committed. See README.md for how to fetch it for a local run.
 assets/stlite/
 
+# The Pages workflow assembles the site here.
+_site/
+
 # The pyLDAvis wheel IS committed. scripts/build_pyldavis_wheel.py rebuilds it.
 !assets/dist/

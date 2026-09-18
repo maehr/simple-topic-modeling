@@ -25,22 +25,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
-          python-version: '3.13'
+          enable-cache: true
 
       # The stlite runtime is not committed. This fetches the version pinned in
       # scripts/stlite.lock.json and verifies it against the recorded npm
       # integrity hash. The script fails the build if the hash does not match.
       - name: Fetch the pinned stlite runtime
-        run: python3 scripts/fetch_stlite.py
+        run: uv run --no-project python scripts/fetch_stlite.py
 
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./
-          destination: ./_site
+      # The site is static. It lists exactly what it publishes, so no
+      # development file can reach the web by accident.
+      - name: Assemble the site
+        run: |
+          mkdir _site
+          cp index.html site.webmanifest _site/
+          cp favicon.ico favicon-16x16.png favicon-32x32.png _site/
+          cp apple-touch-icon.png android-chrome-192x192.png _site/
+          cp android-chrome-512x512.png _site/
+          mkdir -p _site/src _site/assets
+          cp -R src/. _site/src/
+          cp -R assets/dist assets/stlite _site/assets/
+          find _site -name '__pycache__' -type d -prune -exec rm -rf {} +
+
+      # index.html must be able to fetch every file it names.
+      - name: Check the published files
+        run: |
+          for f in index.html src/app.py src/topic_model.py \
+                   src/utils/stopwords.py site.webmanifest \
+                   assets/stlite/build/stlite.js assets/stlite/build/stlite.css \
+                   assets/dist/pyLDAvis-3.4.1-py3-none-any.whl; do
+            if [ ! -f "_site/$f" ]; then
+              echo "MISSING from the site: $f"
+              exit 1
+            fi
+          done
+          echo "Every file that index.html needs is present."
 
       - name: Upload the site artifact
         uses: actions/upload-pages-artifact@v4

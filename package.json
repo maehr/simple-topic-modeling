@@ -2,30 +2,26 @@
 	"name": "simple-topic-modeling",
 	"description": "This app is a simple topic modeling tool that uses Latent Dirichlet Allocation (LDA) to discover topics in a corpus of text documents.",
 	"author": "Moritz Mähr <moritz.maehr@gmail.com>",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"url": "https://github.com/maehr/simple-topic-modeling/issues",
 	"license": "AGPL-3.0",
+	"packageManager": "pnpm@12.4.1",
 	"scripts": {
 		"check": "prettier --ignore-path .gitignore --ignore-path .prettierignore --check .",
 		"commit": "cz",
 		"format": "prettier --ignore-path .gitignore --ignore-path .prettierignore --write .",
-		"prepare": "husky install"
+		"prepare": "husky"
 	},
 	"devDependencies": {
-		"commitizen": "^4.3.0",
+		"commitizen": "^4.3.2",
 		"cz-conventional-changelog": "^3.3.0",
-		"husky": "^9.0.11",
-		"prettier": "^3.2.5"
+		"husky": "^9.1.7",
+		"prettier": "^3.9.6"
 	},
 	"type": "module",
 	"config": {
 		"commitizen": {
 			"path": "./node_modules/cz-conventional-changelog"
-		},
-		"husky": {
-			"hooks": {
-				"prepare-commit-msg": "exec < /dev/tty && git cz --hook || true"
-			}
 		}
 	}
 }

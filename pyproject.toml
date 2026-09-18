@@ -30,7 +30,7 @@ Repository = "https://github.com/maehr/simple-topic-modeling"
 "Bug Tracker" = "https://github.com/maehr/simple-topic-modeling/issues"
 
 [dependency-groups]
-dev = ["ruff>=0.16,<0.17", "pytest>=8,<9", "pytest-cov>=7,<8"]
+dev = ["ruff>=0.16,<0.17", "pytest>=9,<10", "pytest-cov>=7,<8"]
 
 # No [build-system]. This is an application, not a library, so uv does not
 # build or install the project itself.

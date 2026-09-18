@@ -142,3 +142,42 @@ The wheel file name carries the version. Update the path in `app.py` when you bu
 `pyproject.toml`.
 
 `public/wheels/` holds build output. Git ignores it. Always build before you export.
+
+### Keep the dependency bounds below the Pyodide versions
+
+Pyodide ships its own build of every runtime package. micropip refuses to reinstall one, so a lower
+bound above the shipped version stops the whole install. The app then fails with
+`ModuleNotFoundError: No module named 'browser_topics'`.
+
+Write each bound as the oldest API the code uses. Never raise a bound to the newest release. The
+Pyodide version that marimo pins lags the Pyodide documentation.
+
+Keep `marimo` out of `[project].dependencies`. Only `app.py` imports marimo. The package does not.
+
+### Install the wheel again from an absolute URL
+
+marimo hands micropip the PEP 723 wheel path as a relative URL. micropip does not resolve it against
+the page. The first cell therefore installs the wheel again, under a `sys.platform == "emscripten"`
+guard, using `mo.notebook_location()` to build an absolute URL. Keep both paths. The PEP 723 entry
+also stops marimo from building its own wheel.
+
+### Check the notebook with `app.run()`
+
+`marimo check` does not catch a name that two cells both define. `app.run()` does. Run this after you
+edit `app.py`:
+
+```bash
+uv run python -c "
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location('notebook_app', 'app.py')
+module = importlib.util.module_from_spec(spec); sys.modules['notebook_app'] = module
+spec.loader.exec_module(module); module.app.run(); print('cells ok')
+"
+```
+
+Prefix every cell-local variable with `_`. marimo requires a unique name across cells.
+
+### Two targets, two checks
+
+`marimo edit app.py` runs local CPython. The exported `dist/` runs Pyodide in the browser. A change
+can pass one and fail the other. Always check both before you call the work done.

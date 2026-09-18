@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import Sequence
 
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -65,7 +66,7 @@ def clean_text(text: str, config: PreprocessConfig) -> str:
     return _WHITESPACE.sub(" ", text).strip()
 
 
-def clean_texts(texts: list[str], config: PreprocessConfig) -> list[str]:
+def clean_texts(texts: Sequence[str], config: PreprocessConfig) -> list[str]:
     """Clean every document in a corpus.
 
     >>> clean_texts(["Hello WORLD", "  Second  DOC "], PreprocessConfig())
@@ -82,7 +83,7 @@ def _expand(stop_words: frozenset[str], min_token_length: int) -> list[str] | No
 
 
 def frequent_terms(
-    texts: list[str],
+    texts: Sequence[str],
     stop_words: frozenset[str],
     min_token_length: int = 2,
     top_n: int = 25,

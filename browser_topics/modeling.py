@@ -7,6 +7,7 @@ sparse, as `SPECS.md` section 8 requires.
 from __future__ import annotations
 
 import warnings
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -69,7 +70,7 @@ def build_vectorizer(config: AppConfig) -> TfidfVectorizer | CountVectorizer:
     return CountVectorizer(**shared)
 
 
-def vectorize(documents: list[str], config: AppConfig) -> tuple[spmatrix, list[str]]:
+def vectorize(documents: Sequence[str], config: AppConfig) -> tuple[spmatrix, list[str]]:
     """Clean the documents and build the sparse document-term matrix.
 
     >>> corpus = ["cat dog runs", "cat sleeps", "dog barks", "cat dog plays"]

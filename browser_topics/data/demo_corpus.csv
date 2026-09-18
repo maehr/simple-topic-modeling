@@ -1,0 +1,121 @@
+document_id,text,category,date
+doc-001,The compiler secures network traffic between data centres.,tech,2025-01-01
+doc-002,The drought reshapes emissions targets in the treaty.,climate,2025-02-02
+doc-003,The butter sauce softens the meat during a slow roast.,cooking,2025-03-03
+doc-004,Our goalkeeper defeated the national squad during the season.,sport,2025-04-04
+doc-005,The striker challenged the away team after extra time.,sport,2025-05-05
+doc-006,The compiler replaces the encryption protocol in the library.,tech,2025-06-06
+doc-007,Our goalkeeper challenged the away team after extra time.,sport,2025-07-07
+doc-008,The database engine encrypts the software build and release process.,tech,2025-08-08
+doc-009,The machine learning model secures queries against the large database.,tech,2025-09-09
+doc-010,Record summer temperature reshapes the wheat harvest across dry regions.,climate,2025-10-10
+doc-011,Coastal flooding threatens sea ice around the polar coast.,climate,2025-11-11
+doc-012,Ripe tomatoes balances the bread before a long cold rise.,cooking,2025-12-12
+doc-013,The young athlete challenged the away team after extra time.,sport,2025-01-13
+doc-014,Toasted spices flavours the bread before a long cold rise.,cooking,2025-02-14
+doc-015,The open source library speeds up network traffic between data centres.,tech,2025-03-15
+doc-016,Melting glacier ice reshapes the energy grid during summer heat.,climate,2025-04-16
+doc-017,The warming ocean endangers the regional climate and rainfall.,climate,2025-05-17
+doc-018,The open source library monitors the software build and release process.,tech,2025-06-18
+doc-019,Record summer temperature endangers the regional climate and rainfall.,climate,2025-07-19
+doc-020,Rising carbon emissions endangers sea ice around the polar coast.,climate,2025-08-20
+doc-021,Renewable energy growth reshapes emissions targets in the treaty.,climate,2025-09-21
+doc-022,The young athlete scored against the league champion in the final match.,sport,2025-10-22
+doc-023,Record summer temperature reshapes emissions targets in the treaty.,climate,2025-11-23
+doc-024,A security patch encrypts the software build and release process.,tech,2025-12-24
+doc-025,The compiler monitors the encryption protocol in the library.,tech,2025-01-25
+doc-026,The warming ocean threatens water supply for farming villages.,climate,2025-02-26
+doc-027,Her coach trained with the champion in the second half.,sport,2025-03-27
+doc-028,The roast enriches the vegetables in the hot oven.,cooking,2025-04-01
+doc-029,The slow dough browns the meat during a slow roast.,cooking,2025-05-02
+doc-030,The tired squad challenged the champion in the second half.,sport,2025-06-03
+doc-031,The league champion beat the cup holder in a tense match.,sport,2025-07-04
+doc-032,Toasted spices enriches the broth with salt and herbs.,cooking,2025-08-05
+doc-033,The striker beat the tournament favourite on penalties.,sport,2025-09-06
+doc-034,The tired squad beat the league champion in the final match.,sport,2025-10-07
+doc-035,Fresh basil seasons the vegetables in the hot oven.,cooking,2025-11-08
+doc-036,The young athlete beat the champion in the second half.,sport,2025-12-09
+doc-037,Our goalkeeper beat the national squad during the season.,sport,2025-01-10
+doc-038,The league champion replaced the visiting club at the stadium.,sport,2025-02-11
+doc-039,The warming ocean damages the energy grid during summer heat.,climate,2025-03-12
+doc-040,Our software release monitors network traffic between data centres.,tech,2025-04-13
+doc-041,Toasted spices enriches the meat during a slow roast.,cooking,2025-05-14
+doc-042,Coastal flooding threatens emissions targets in the treaty.,climate,2025-06-15
+doc-043,The database engine secures the encryption protocol in the library.,tech,2025-07-16
+doc-044,Toasted spices enriches the dish just before serving.,cooking,2025-08-17
+doc-045,The warming ocean reduces carbon storage in old forests.,climate,2025-09-18
+doc-046,The machine learning model monitors the encryption protocol in the library.,tech,2025-10-19
+doc-047,The database engine optimises memory access in the server cluster.,tech,2025-11-20
+doc-048,Our goalkeeper trained with the league champion in the final match.,sport,2025-12-21
+doc-049,Rising carbon emissions damages water supply for farming villages.,climate,2025-01-22
+doc-050,Our goalkeeper defeated the champion in the second half.,sport,2025-02-23
+doc-051,The visiting team trained with the cup holder in a tense match.,sport,2025-03-24
+doc-052,The machine learning model monitors user data inside the browser.,tech,2025-04-25
+doc-053,Forest loss endangers the energy grid during summer heat.,climate,2025-05-26
+doc-054,A security patch speeds up memory access in the server cluster.,tech,2025-06-27
+doc-055,Coastal flooding threatens the wheat harvest across dry regions.,climate,2025-07-01
+doc-056,The tired squad replaced the tournament favourite on penalties.,sport,2025-08-02
+doc-057,The machine learning model optimises the encryption protocol in the library.,tech,2025-09-03
+doc-058,Melting glacier ice damages the energy grid during summer heat.,climate,2025-10-04
+doc-059,Fresh basil browns the bread before a long cold rise.,cooking,2025-11-05
+doc-060,Record summer temperature endangers carbon storage in old forests.,climate,2025-12-06
+doc-061,Ripe tomatoes seasons the sauce over gentle heat.,cooking,2025-01-07
+doc-062,The simmering stock softens the pasta with cheese and pepper.,cooking,2025-02-08
+doc-063,Fresh basil enriches the soup with garlic and olive oil.,cooking,2025-03-09
+doc-064,Toasted spices balances the bread before a long cold rise.,cooking,2025-04-10
+doc-065,A security patch secures the encryption protocol in the library.,tech,2025-05-11
+doc-066,The injured player scored against the rival club before a full stadium.,sport,2025-06-12
+doc-067,The roast enriches the sauce over gentle heat.,cooking,2025-07-13
+doc-068,Cloud storage monitors code that developers deploy to production.,tech,2025-08-14
+doc-069,The warming ocean threatens carbon storage in old forests.,climate,2025-09-15
+doc-070,The open source library monitors memory access in the server cluster.,tech,2025-10-16
+doc-071,Rising carbon emissions accelerates sea ice around the polar coast.,climate,2025-11-17
+doc-072,Her coach defeated the national squad during the season.,sport,2025-12-18
+doc-073,Toasted spices softens the sauce over gentle heat.,cooking,2025-01-19
+doc-074,The new processor optimises memory access in the server cluster.,tech,2025-02-20
+doc-075,Our goalkeeper challenged the visiting club at the stadium.,sport,2025-03-21
+doc-076,Our software release monitors queries against the large database.,tech,2025-04-22
+doc-077,A hot pan balances the sauce over gentle heat.,cooking,2025-05-23
+doc-078,The open source library secures the training pipeline for the model.,tech,2025-06-24
+doc-079,The league champion defeated the visiting club at the stadium.,sport,2025-07-25
+doc-080,A hot pan enriches the broth with salt and herbs.,cooking,2025-08-26
+doc-081,The injured player beat the visiting club at the stadium.,sport,2025-09-27
+doc-082,A security patch monitors memory access in the server cluster.,tech,2025-10-01
+doc-083,The warming ocean reduces the regional climate and rainfall.,climate,2025-11-02
+doc-084,Fresh basil seasons the broth with salt and herbs.,cooking,2025-12-03
+doc-085,A security patch encrypts memory access in the server cluster.,tech,2025-01-04
+doc-086,Our software release secures the software build and release process.,tech,2025-02-05
+doc-087,The warming ocean accelerates the wheat harvest across dry regions.,climate,2025-03-06
+doc-088,The injured player scored against the league champion in the final match.,sport,2025-04-07
+doc-089,Coastal flooding endangers the energy grid during summer heat.,climate,2025-05-08
+doc-090,Toasted spices softens the bread before a long cold rise.,cooking,2025-06-09
+doc-091,Fresh basil softens the meat during a slow roast.,cooking,2025-07-10
+doc-092,Our software release speeds up code that developers deploy to production.,tech,2025-08-11
+doc-093,A security patch monitors network traffic between data centres.,tech,2025-09-12
+doc-094,Fresh basil seasons the dish just before serving.,cooking,2025-10-13
+doc-095,Our software release optimises code that developers deploy to production.,tech,2025-11-14
+doc-096,Cloud storage speeds up memory access in the server cluster.,tech,2025-12-15
+doc-097,The slow dough softens the soup with garlic and olive oil.,cooking,2025-01-16
+doc-098,Toasted spices seasons the meat during a slow roast.,cooking,2025-02-17
+doc-099,Renewable energy growth damages carbon storage in old forests.,climate,2025-03-18
+doc-100,The league champion beat the rival club before a full stadium.,sport,2025-04-19
+doc-101,The visiting team beat the rival club before a full stadium.,sport,2025-05-20
+doc-102,The visiting team challenged the visiting club at the stadium.,sport,2025-06-21
+doc-103,Renewable energy growth damages sea ice around the polar coast.,climate,2025-07-22
+doc-104,The new processor encrypts network traffic between data centres.,tech,2025-08-23
+doc-105,Renewable energy growth threatens coastal cities and low farmland.,climate,2025-09-24
+doc-106,A hot pan softens the pasta with cheese and pepper.,cooking,2025-10-25
+doc-107,Melting glacier ice damages the wheat harvest across dry regions.,climate,2025-11-26
+doc-108,A hot pan seasons the soup with garlic and olive oil.,cooking,2025-12-27
+doc-109,A hot pan seasons the pasta with cheese and pepper.,cooking,2025-01-01
+doc-110,Her coach scored against the away team after extra time.,sport,2025-02-02
+doc-111,The visiting team trained with the national squad during the season.,sport,2025-03-03
+doc-112,The striker scored against the league champion in the final match.,sport,2025-04-04
+doc-113,The butter sauce softens the bread before a long cold rise.,cooking,2025-05-05
+doc-114,The drought threatens sea ice around the polar coast.,climate,2025-06-06
+doc-115,Renewable energy growth endangers emissions targets in the treaty.,climate,2025-07-07
+doc-116,Cloud storage speeds up user data inside the browser.,tech,2025-08-08
+doc-117,A hot pan flavours the soup with garlic and olive oil.,cooking,2025-09-09
+doc-118,The warming ocean reshapes sea ice around the polar coast.,climate,2025-10-10
+doc-119,Ripe tomatoes enriches the bread before a long cold rise.,cooking,2025-11-11
+doc-120,The striker defeated the rival club before a full stadium.,sport,2025-12-12

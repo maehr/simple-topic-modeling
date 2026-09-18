@@ -10,8 +10,10 @@ from __future__ import annotations
 import io
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from html.parser import HTMLParser
+from importlib.resources import files
 from statistics import median
 from typing import Literal
 
@@ -28,6 +30,7 @@ __all__ = [
     "build_corpus",
     "corpus_stats",
     "decode_text",
+    "demo_table",
     "detect_kind",
     "read_table",
     "split_text",
@@ -265,7 +268,7 @@ def read_table(file: UploadedFile) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def corpus_stats(documents: list[str]) -> CorpusStats:
+def corpus_stats(documents: Sequence[str]) -> CorpusStats:
     """Report the counts that `SPECS.md` section 2 shows.
 
     The median length counts characters of the non-empty documents.
@@ -290,8 +293,8 @@ def corpus_stats(documents: list[str]) -> CorpusStats:
 
 
 def build_corpus(
-    documents: list[str],
-    document_ids: list[str],
+    documents: Sequence[str],
+    document_ids: Sequence[str],
     metadata: pd.DataFrame | None = None,
 ) -> tuple[Corpus, CorpusStats]:
     """Drop the empty documents and return the corpus with its statistics.
@@ -322,3 +325,18 @@ def build_corpus(
         ),
         stats,
     )
+
+
+def demo_table() -> pd.DataFrame:
+    """Read the demo corpus that ships inside the package.
+
+    The app never fetches this file over the network, so it works offline in the browser.
+
+    >>> frame = demo_table()
+    >>> frame.columns.tolist()
+    ['document_id', 'text', 'category', 'date']
+    >>> len(frame) > 40
+    True
+    """
+    resource = files("browser_topics") / "data" / "demo_corpus.csv"
+    return pd.read_csv(io.StringIO(resource.read_text(encoding="utf-8")))

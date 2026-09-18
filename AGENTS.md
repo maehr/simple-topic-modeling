@@ -2,7 +2,7 @@
 
 This repository holds a Streamlit application that finds topics in a text corpus with Latent Dirichlet Allocation (LDA).
 
-This file follows the shared Python specification in `~/.claude/agents-specs/10-AGENTS.python.md`. Sections 1, 3, 5, and 6 are the shared text. Sections 2, 4, and 7 are narrowed to this repository. The specification assumes uv, ty, prek, and Pydantic. This repository uses none of them, so those parts are removed.
+This file follows the shared Python specification in `~/.claude/agents-specs/10-AGENTS.python.md`. Sections 1, 3, 5, and 6 are the shared text. Sections 2, 4, and 7 are narrowed to this repository. The specification also assumes ty, prek, and Pydantic. This repository uses none of them, so those parts are removed.
 
 ## 1. Orchestration
 
@@ -24,9 +24,11 @@ Context is the scarce resource. Manage it.
 
 ## 2. Tooling
 
-Pin versions in `pyproject.toml`. Commit `poetry.lock`. Install with `poetry install`.
+Pin versions in `pyproject.toml`. Commit `uv.lock`. Install with `uv sync --locked`.
 
-**Python.** [Poetry](https://python-poetry.org/docs/) dependencies, environments, and the lockfile · [ruff](https://docs.astral.sh/ruff/) lint and format · [pytest](https://docs.pytest.org/) with [pytest-cov](https://pytest-cov.readthedocs.io/) tests.
+The project pins one Python version. `.python-version` holds it, and `requires-python` repeats it. Do not widen it to a range. A range made the resolver select old sdist-only releases that cannot compile.
+
+**Python.** [uv](https://docs.astral.sh/uv/) dependencies, environments, and the lockfile · [ruff](https://docs.astral.sh/ruff/) lint and format · [pytest](https://docs.pytest.org/) with [pytest-cov](https://pytest-cov.readthedocs.io/) tests.
 
 **JavaScript.** [pnpm](https://pnpm.io/) dependencies, pinned by the `packageManager` field · [prettier](https://prettier.io/) format for Markdown, YAML, HTML, and JSON · [husky](https://typicode.github.io/husky/) the pre-commit hook · [commitizen](https://commitizen-tools.github.io/commitizen/) (`cz`) commits · [git-cliff](https://git-cliff.org/docs/) changelog, configured in `cliff.toml`.
 
@@ -53,8 +55,8 @@ There is no type checker. Do not add one without the owner's agreement.
 Run this gate before a handoff:
 
 ```bash
-poetry run ruff check . && poetry run ruff format --check .
-poetry run pytest
+uv run ruff check . && uv run ruff format --check .
+uv run pytest
 pnpm check
 ```
 
@@ -124,11 +126,15 @@ This repository ships the same `src/` to two runtimes. The browser runtime decid
 - `index.html` mounts three files: `app.py`, `topic_model.py`, and `utils/stopwords.py`. It mounts them flat. Import `topic_model`, never `src.topic_model`.
 - Keep `numpy` below 2.3. pyLDAvis 3.4.1 cannot serialize the values that a newer numpy returns. The application then fails at the figure step.
 
+### Deployment
+
+`.github/workflows/pages.yml` publishes the site. It fetches the stlite runtime, copies the published files into `_site/`, and checks that every file `index.html` needs is present. The site is static. There is no Jekyll step and no site generator.
+
 ### Scripts
 
-Run `python3 scripts/fetch_stlite.py` to get the browser runtime. The script verifies the download against `scripts/stlite.lock.json`. `assets/stlite/` is not committed.
+Run `uv run --no-project python scripts/fetch_stlite.py` to get the browser runtime. The scripts use the standard library only, so plain `python3` also works. The script verifies the download against `scripts/stlite.lock.json`. `assets/stlite/` is not committed.
 
-Run `python3 scripts/build_pyldavis_wheel.py` to rebuild `assets/dist/pyLDAvis-3.4.1-py3-none-any.whl`. The script verifies the upstream wheel against a pinned SHA-256. The output is reproducible. `assets/dist/` is committed.
+Run `uv run --no-project python scripts/build_pyldavis_wheel.py` to rebuild `assets/dist/pyLDAvis-3.4.1-py3-none-any.whl`. The script verifies the upstream wheel against a pinned SHA-256. The output is reproducible. `assets/dist/` is committed.
 
 Caution: do not bypass either integrity check. A mismatch means the upstream artifact changed. Investigate the change first.
 

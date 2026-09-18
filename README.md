@@ -13,12 +13,14 @@ You can try out the app [here](https://maehr.github.io/simple-topic-modeling/).
 
 ## Installation
 
-This section provides instructions on how to install the dependencies required to run the app locally. Make sure you have [Python](https://www.python.org/downloads/) 3.11 or higher and [Node.js](https://nodejs.org/en/download/) installed before proceeding.
+This section tells you how to install the dependencies. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and [Node.js](https://nodejs.org/en/download/) first.
 
-Use the package manager [poetry](https://python-poetry.org/docs/) to install all Python dependencies. Run the following command in your terminal:
+The project uses Python 3.13. You do not need to install it yourself. `uv` reads the version from `.python-version` and fetches it.
+
+Use [uv](https://docs.astral.sh/uv/) to install all Python dependencies. Run this command in your terminal:
 
 ```bash
-poetry install
+uv sync
 ```
 
 Use the package manager [pnpm](https://pnpm.io/installation) to install dev dependencies like [prettier](https://prettier.io/). Run the following command in your terminal:
@@ -32,7 +34,7 @@ pnpm install
 To run the app locally, use the following command.
 
 ```bash
-poetry run streamlit run src/app.py
+uv run streamlit run src/app.py
 ```
 
 ## Development
@@ -40,8 +42,8 @@ poetry run streamlit run src/app.py
 To run linting and formatting checks, use these commands:
 
 ```bash
-poetry run ruff check .
-poetry run ruff format .
+uv run ruff check .
+uv run ruff format .
 pnpm check
 pnpm format
 ```
@@ -49,7 +51,7 @@ pnpm format
 To run the tests, use this command:
 
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
 ### Browser version

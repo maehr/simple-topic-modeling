@@ -1,0 +1,91 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Declared per job. The build job needs no deploy credentials.
+permissions:
+  contents: read
+
+# Never cancel a running deploy. A cancelled deploy can leave the site
+# half-published, so queue instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+
+      # The stlite runtime is not committed. This fetches the version pinned in
+      # scripts/stlite.lock.json and verifies it against the recorded npm
+      # integrity hash. The script fails the build if the hash does not match.
+      # The wheel is committed, so the rebuild script's upstream check does
+      # not cover it. Verify the committed bytes before they are published.
+      - name: Verify the committed pyLDAvis wheel
+        run: shasum -c scripts/pyldavis-wheel.sha256
+
+      - name: Fetch the pinned stlite runtime
+        run: uv run --no-project python scripts/fetch_stlite.py
+
+      # The site is static. It lists exactly what it publishes, so no
+      # development file can reach the web by accident.
+      - name: Assemble the site
+        run: |
+          mkdir _site
+          cp index.html site.webmanifest _site/
+          cp favicon.ico favicon-16x16.png favicon-32x32.png _site/
+          cp apple-touch-icon.png android-chrome-192x192.png _site/
+          cp android-chrome-512x512.png _site/
+          mkdir -p _site/src _site/assets
+          cp -R src/. _site/src/
+          cp -R assets/dist assets/stlite _site/assets/
+          find _site -name '__pycache__' -type d -prune -exec rm -rf {} +
+
+      # index.html must be able to fetch every file it names.
+      - name: Check the published files
+        run: |
+          for f in index.html src/app.py src/topic_model.py \
+                   src/utils/stopwords.py site.webmanifest \
+                   assets/stlite/build/stlite.js assets/stlite/build/stlite.css \
+                   assets/dist/pyLDAvis-3.4.1-py3-none-any.whl; do
+            if [ ! -f "_site/$f" ]; then
+              echo "MISSING from the site: $f"
+              exit 1
+            fi
+          done
+          echo "Every file that index.html needs is present."
+
+      - name: Upload the site artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+        with:
+          path: ./_site
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

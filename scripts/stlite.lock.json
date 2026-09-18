@@ -1,0 +1,8 @@
+{
+	"comment": "Pinned stlite runtime. Update with: python3 scripts/fetch_stlite.py --update <version>",
+	"package": "@stlite/browser",
+	"version": "1.9.1",
+	"integrity": "sha512-FWYCs3yyZEa36+W+MWnHBxYY7XUProCOiHXS9QTz+t8bKEFL3r3tTK6pU9M1INhrZ7tg3hDgXZnEyKykrIoAEA==",
+	"bundled_streamlit": "1.62.0",
+	"bundled_python": "3.13"
+}

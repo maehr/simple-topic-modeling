@@ -9,22 +9,24 @@ This app is a simple topic modeling tool that uses Latent Dirichlet Allocation (
 
 ## Demo
 
-You can try out the app [here](https://maehr.github.io/simple-topic-modeling/). If you want to visualize the topics with the more advanced [PyLDAvis](https://github.com/bmabey/pyLDAvis) library, you need to run the app locally.
+You can try out the app [here](https://maehr.github.io/simple-topic-modeling/).
 
 ## Installation
 
-This section provides instructions on how to install the dependencies required to run the app locally. Make sure you have [Python](https://www.python.org/downloads/) 3.11 or higher and [Node.js](https://nodejs.org/en/download/) installed before proceeding.
+This section tells you how to install the dependencies. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and [Node.js](https://nodejs.org/en/download/) first.
 
-Use the package manager [poetry](https://python-poetry.org/docs/) to install all Python dependencies. Run the following command in your terminal:
+The project uses Python 3.13. You do not need to install it yourself. `uv` reads the version from `.python-version` and fetches it.
+
+Use [uv](https://docs.astral.sh/uv/) to install all Python dependencies. Run this command in your terminal:
 
 ```bash
-poetry install
+uv sync
 ```
 
-Use the package manager [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) to install more dev dependencies like [prettier](https://prettier.io/). Run the following command in your terminal:
+Use the package manager [pnpm](https://pnpm.io/installation) to install dev dependencies like [prettier](https://prettier.io/). Run the following command in your terminal:
 
 ```bash
-npm install
+pnpm install
 ```
 
 ## Usage
@@ -32,35 +34,79 @@ npm install
 To run the app locally, use the following command.
 
 ```bash
-poetry run streamlit run src/app.py
+uv run streamlit run src/app.py
 ```
 
 ## Development
 
-If you want to contribute to this project, you can use the following commands to test the browser version of the app.
+To run linting and formatting checks, use these commands:
 
 ```bash
-python3 -m http.server 8000 --directory .
+uv run ruff check .
+uv run ruff format .
+pnpm check
+pnpm format
 ```
 
-To format the code, use the following commands.
+To run the tests, use this command:
 
 ```bash
-poetry run ruff format
-npm format
+uv run pytest
 ```
+
+### Browser version
+
+The app runs in the browser through stlite (Streamlit compiled to WebAssembly). Before testing locally, download the runtime:
+
+```bash
+python3 scripts/fetch_stlite.py
+```
+
+This script downloads the pinned stlite release into `assets/stlite/build/` and verifies it against the hash in `scripts/stlite.lock.json`.
+
+Serve the repository root at your development machine:
+
+```bash
+python3 -m http.server 8000
+```
+
+Open the directory URL `http://localhost:8000/` in your browser, not the file URL. stlite builds its internal asset URLs from the page location, and the file URL form breaks them.
+
+To update to a new stlite version, run:
+
+```bash
+python3 scripts/fetch_stlite.py --update <version>
+```
+
+### Python wheel
+
+The pyLDAvis wheel is committed to `assets/dist/pyLDAvis-3.4.1-py3-none-any.whl`. Rebuild it reproducibly with:
+
+```bash
+python3 scripts/build_pyldavis_wheel.py
+```
+
+This script downloads the upstream wheel, verifies its SHA-256, removes pip and setuptools that upstream accidentally ships inside, and removes gensim and numexpr requirements that cannot run in Pyodide. Verify the output hash with:
+
+```bash
+shasum -c scripts/pyldavis-wheel.sha256
+```
+
+### Dependencies
+
+`pyproject.toml` caps numpy below 2.3. pyLDAvis 3.4.1 cannot serialize values from newer numpy versions, causing the app to fail at the visualization step. This cap must remain until pyLDAvis fixes it.
 
 ## Support
 
 This project is maintained by [@maehr](https://github.com/maehr). Please understand that we won't be able to provide individual support via email. We also believe that help is much more valuable if it's shared publicly, so that more people can benefit from it.
 
-| Type                                   | Platforms                                                                        |
-| -------------------------------------- | -------------------------------------------------------------------------------- |
-| 🚨 **Bug Reports**                     | [GitHub Issue Tracker](https://github.com/maehr/simple-topic-modeling/issues)    |
-| 📚 **Docs Issue**                      | [GitHub Issue Tracker](https://github.com/maehr/simple-topic-modeling/issues)    |
-| 🎁 **Feature Requests**                | [GitHub Issue Tracker](https://github.com/maehr/simple-topic-modeling/issues)    |
+| Type                                  | Platforms                                                                        |
+| ------------------------------------- | -------------------------------------------------------------------------------- |
+| 🚨 **Bug Reports**                    | [GitHub Issue Tracker](https://github.com/maehr/simple-topic-modeling/issues)    |
+| 📚 **Docs Issue**                     | [GitHub Issue Tracker](https://github.com/maehr/simple-topic-modeling/issues)    |
+| 🎁 **Feature Requests**               | [GitHub Issue Tracker](https://github.com/maehr/simple-topic-modeling/issues)    |
 | 🛡 **Report a security vulnerability** | See [SECURITY.md](SECURITY.md)                                                   |
-| 💬 **General Questions**               | [GitHub Discussions](https://github.com/maehr/simple-topic-modeling/discussions) |
+| 💬 **General Questions**              | [GitHub Discussions](https://github.com/maehr/simple-topic-modeling/discussions) |
 
 ## Roadmap
 

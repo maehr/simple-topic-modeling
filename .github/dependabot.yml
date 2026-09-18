@@ -1,0 +1,40 @@
+# Grouping note: inside a group, the key for semver levels is `update-types`.
+# `dependency-types` is a different key that only accepts "development" and
+# "production", so using it for minor/patch makes Dependabot reject this file.
+version: 2
+updates:
+  - package-ecosystem: uv # reads pyproject.toml and uv.lock
+    directory: '/'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python-minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm # covers pnpm via package.json and pnpm-lock.yaml
+    directory: '/'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      js-minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      actions-all:
+        patterns:
+          - '*'

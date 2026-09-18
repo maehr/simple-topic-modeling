@@ -3,7 +3,7 @@
 # "production", so using it for minor/patch makes Dependabot reject this file.
 version: 2
 updates:
-  - package-ecosystem: pip # covers Poetry via pyproject.toml and poetry.lock
+  - package-ecosystem: uv # reads pyproject.toml and uv.lock
     directory: '/'
     schedule:
       interval: weekly

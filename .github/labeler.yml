@@ -1,32 +1,23 @@
 src:
   changed-files:
     - any-glob-to-any-file:
-        - .dockerignore
-        - .gitattributes
-        - .gitignore
-        - example.env
-        - src/*
+        - src/**
+        - tests/**
+        - scripts/**
+        - pyproject.toml
+        - uv.lock
+        - index.html
 
 docs:
   changed-files:
     - any-glob-to-any-file:
-        - CODE_OF_CONDUCT.md
-        - CONTRIBUTING.md
-        - LICENSE.md
-        - README.md
-        - SECURITY.md
-        - _config.yml
-        - _layouts
-        - android-chrome-192x192.png
-        - android-chrome-512x512.png
-        - apple-touch-icon.png
-        - assets/*
-        - favicon-16x16.png
-        - favicon-32x32.png
-        - favicon.ico
+        - '*.md'
+        - assets/**
         - site.webmanifest
+        - '*.png'
+        - '*.ico'
 
 github:
   changed-files:
     - any-glob-to-any-file:
-        - .github/*
+        - .github/**

@@ -1,5 +1,7 @@
 """
-This module contains lists of stopwords for French and German languages. The stopwords are taken from https://github.com/stopwords-iso/ and licensed under MIT License.
+This module contains lists of stopwords for French and German languages.
+The stopwords are taken from https://github.com/stopwords-iso/ and
+licensed under MIT License.
 """
 
 french = [
@@ -851,7 +853,6 @@ german = [
     "eben",
     "ebenso",
     "ehrlich",
-    "ei",
     "ei",
     "",
     "eigen",

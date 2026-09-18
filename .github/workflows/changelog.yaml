@@ -1,19 +1,28 @@
 name: Create changelog
 
-on: [push]
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   changelog:
     name: Generate changelog
     runs-on: ubuntu-latest
     steps:
+      # Check out the branch, not the tag. A tag push leaves the workspace in
+      # detached HEAD, and a plain `git push` from there fails.
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Generate a changelog
-        uses: orhun/git-cliff-action@v1
+        uses: orhun/git-cliff-action@3d96a18cc4ec17e9dc69ddcc424ccafaf1f78ce2 # v4.9.0
         id: git-cliff
         with:
           config: cliff.toml
@@ -21,5 +30,15 @@ jobs:
         env:
           OUTPUT: CHANGELOG.md
 
-      - name: Print the changelog
-        run: cat "${{ steps.git-cliff.outputs.changelog }}"
+      - name: Commit and push the changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          # A re-run on an existing tag produces no diff. That is not a failure.
+          if git diff --staged --quiet; then
+            echo "The changelog is already up to date."
+            exit 0
+          fi
+          git commit -m "docs: update changelog for ${{ github.ref_name }}"
+          git push origin HEAD:main

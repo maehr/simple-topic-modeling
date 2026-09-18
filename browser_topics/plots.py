@@ -20,13 +20,20 @@ if TYPE_CHECKING:
 
 __all__ = [
     "SNIPPET_LENGTH",
+    "choose_date_bin",
     "document_frame",
     "document_scatter",
+    "group_share_frame",
+    "group_stacked_bars",
+    "parse_dates",
     "prevalence_bars",
     "representative_documents",
+    "score_histogram",
     "similarity_heatmap",
     "similarity_long_frame",
     "snippet",
+    "time_line_chart",
+    "time_share_frame",
     "top_term_bars",
     "top_term_frame",
     "topic_cards",
@@ -362,3 +369,181 @@ def word_cloud_png(result: TopicModelResult, topic: int, term_count: int = 60) -
     buffer = BytesIO()
     cloud.to_image().save(buffer, format="PNG")
     return buffer.getvalue()
+
+
+def group_share_frame(result: TopicModelResult, column: str) -> pd.DataFrame:
+    """Average the topic shares inside each group.
+
+    Every group's shares sum to 1, so the stacked bars compare groups of any size.
+
+    >>> from browser_topics.result import _example_result
+    >>> import pandas as pd
+    >>> example = _example_result()
+    >>> object.__setattr__(example, "metadata", pd.DataFrame({"group": ["a", "a", "b"]}))
+    >>> frame = group_share_frame(example, "group")
+    >>> frame.columns.tolist()
+    ['group', 'topic', 'share', 'documents']
+    >>> bool(frame.groupby("group")["share"].sum().round(6).eq(1.0).all())
+    True
+    """
+    labels = result.metadata[column].fillna("(missing)").astype(str)
+    rows = []
+    for name, index in labels.groupby(labels).groups.items():
+        positions = [labels.index.get_loc(item) for item in index]
+        means = result.document_topic[positions].mean(axis=0)
+        total = means.sum() or 1.0
+        for topic_id, value in enumerate(means):
+            rows.append(
+                {
+                    "group": str(name),
+                    "topic": result.topic_names[topic_id],
+                    "share": float(value / total),
+                    "documents": len(positions),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def group_stacked_bars(frame: pd.DataFrame) -> alt.Chart:
+    """Compare the topic mix of each group as a normalized stacked bar chart.
+
+    >>> from browser_topics.result import _example_result
+    >>> import pandas as pd
+    >>> example = _example_result()
+    >>> object.__setattr__(example, "metadata", pd.DataFrame({"group": ["a", "a", "b"]}))
+    >>> group_stacked_bars(group_share_frame(example, "group")).to_dict()["mark"]["type"]
+    'bar'
+    """
+    return (
+        alt.Chart(frame, title="Topic mix by group")
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "share:Q", title="Share of the group", stack="normalize", axis=alt.Axis(format="%")
+            ),
+            y=alt.Y("group:N", title=None),
+            color=alt.Color("topic:N", title="Topic"),
+            tooltip=[
+                alt.Tooltip("group:N", title="Group"),
+                alt.Tooltip("topic:N", title="Topic"),
+                alt.Tooltip("share:Q", title="Share", format=".1%"),
+                alt.Tooltip("documents:Q", title="Documents"),
+            ],
+        )
+        .properties(height=alt.Step(26))
+    )
+
+
+def parse_dates(values: pd.Series) -> tuple[pd.Series, int]:
+    """Read a date column and report how many values the app could not read.
+
+    >>> import pandas as pd
+    >>> parsed, unparsed = parse_dates(pd.Series(["2025-01-01", "not a date"]))
+    >>> unparsed
+    1
+    >>> parsed.notna().sum()
+    np.int64(1)
+    """
+    parsed = pd.to_datetime(values, errors="coerce", format="mixed")
+    return parsed, int(parsed.isna().sum())
+
+
+def choose_date_bin(parsed: pd.Series) -> str:
+    """Pick a day, month, or year bin from the span of the dates.
+
+    >>> import pandas as pd
+    >>> choose_date_bin(pd.to_datetime(pd.Series(["2025-01-01", "2025-01-20"])))
+    'day'
+    >>> choose_date_bin(pd.to_datetime(pd.Series(["2025-01-01", "2025-11-01"])))
+    'month'
+    >>> choose_date_bin(pd.to_datetime(pd.Series(["2005-01-01", "2025-01-01"])))
+    'year'
+    >>> choose_date_bin(pd.Series([pd.NaT]))
+    'day'
+    """
+    usable = parsed.dropna()
+    if usable.empty:
+        return "day"
+    span = (usable.max() - usable.min()).days
+    if span <= 92:
+        return "day"
+    if span <= 1460:
+        return "month"
+    return "year"
+
+
+def time_share_frame(result: TopicModelResult, parsed: pd.Series, bin_by: str) -> pd.DataFrame:
+    """Average the topic shares inside each time bin.
+
+    >>> from browser_topics.result import _example_result
+    >>> import pandas as pd
+    >>> dates = pd.to_datetime(pd.Series(["2025-01-01", "2025-01-01", "2025-02-01"]))
+    >>> frame = time_share_frame(_example_result(), dates, "month")
+    >>> frame.columns.tolist()
+    ['period', 'topic', 'share']
+    >>> len(frame)
+    4
+    """
+    freq = {"day": "D", "month": "M", "year": "Y"}[bin_by]
+    keep = parsed.notna().to_numpy()
+    periods = parsed[keep].dt.to_period(freq).dt.to_timestamp().reset_index(drop=True)
+    scores = result.document_topic[keep]
+    rows = []
+    for period, positions in periods.groupby(periods).groups.items():
+        means = scores[list(positions)].mean(axis=0)
+        total = means.sum() or 1.0
+        for topic_id, value in enumerate(means):
+            rows.append(
+                {
+                    "period": period,
+                    "topic": result.topic_names[topic_id],
+                    "share": float(value / total),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def time_line_chart(frame: pd.DataFrame) -> alt.Chart:
+    """Draw the topic share over time as one line per topic.
+
+    >>> import pandas as pd
+    >>> frame = pd.DataFrame(
+    ...     {"period": pd.to_datetime(["2025-01-01"]), "topic": ["Topic 1"], "share": [1.0]}
+    ... )
+    >>> time_line_chart(frame).to_dict()["mark"]["type"]
+    'line'
+    """
+    return (
+        alt.Chart(frame, title="Topic share over time")
+        .mark_line(point=True)
+        .encode(
+            x=alt.X("period:T", title=None),
+            y=alt.Y("share:Q", title="Share of the period", axis=alt.Axis(format="%")),
+            color=alt.Color("topic:N", title="Topic"),
+            tooltip=[
+                alt.Tooltip("period:T", title="Period"),
+                alt.Tooltip("topic:N", title="Topic"),
+                alt.Tooltip("share:Q", title="Share", format=".1%"),
+            ],
+        )
+        .properties(height=380)
+    )
+
+
+def score_histogram(frame: pd.DataFrame) -> alt.Chart:
+    """Show how the dominant-topic scores spread across the corpus.
+
+    >>> import pandas as pd
+    >>> score_histogram(pd.DataFrame({"score": [0.1, 0.9]})).to_dict()["mark"]["type"]
+    'bar'
+    """
+    return (
+        alt.Chart(frame, title="Dominant-topic score distribution")
+        .mark_bar()
+        .encode(
+            x=alt.X("score:Q", bin=alt.Bin(maxbins=20), title="Dominant-topic score"),
+            y=alt.Y("count()", title="Documents"),
+            tooltip=[alt.Tooltip("count()", title="Documents")],
+        )
+        .properties(height=260)
+    )

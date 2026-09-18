@@ -38,7 +38,7 @@ async def _():
 
     import pandas as pd
 
-    from browser_topics import exports, io, modeling, plots
+    from browser_topics import exports, io, metrics, modeling, plots
     from browser_topics import result as result_mod
     from browser_topics.config import (
         LANGUAGE_LABELS,
@@ -63,6 +63,7 @@ async def _():
         exports,
         frequent_terms,
         io,
+        metrics,
         mo,
         modeling,
         pd,
@@ -183,9 +184,23 @@ def _(mo, table, text_documents, text_names):
     id_column = mo.ui.dropdown(
         options=["(row number)", *_columns], value="(row number)", label="Document ID"
     )
-    date_column = mo.ui.dropdown(options=["(none)", *_columns], value="(none)", label="Date column")
+    _date_guess = next(
+        (name for name in _columns if name.lower() in {"date", "published", "created", "year"}),
+        "(none)",
+    )
+    _group_guess = next(
+        (
+            name
+            for name in _columns
+            if name.lower() in {"category", "group", "label", "source", "author", "topic"}
+        ),
+        "(none)",
+    )
+    date_column = mo.ui.dropdown(
+        options=["(none)", *_columns], value=_date_guess, label="Date column"
+    )
     group_column = mo.ui.dropdown(
-        options=["(none)", *_columns], value="(none)", label="Group column"
+        options=["(none)", *_columns], value=_group_guess, label="Group column"
     )
     split_mode = mo.ui.dropdown(
         options={
@@ -616,7 +631,9 @@ def _(display_result, mo):
 def _(
     display_result,
     document_search,
+    metrics,
     mo,
+    pd,
     plots,
     score_filter,
     topic_filter,
@@ -699,7 +716,83 @@ def _(
                 _document_view,
             ]
         )
-        _view = mo.ui.tabs({"Overview": _overview, "Topics": _topics, "Documents": _explore})
+        _tabs = {"Overview": _overview, "Topics": _topics, "Documents": _explore}
+
+        _columns = list(display_result.metadata.columns)
+        _panels = []
+        if "group" in _columns:
+            _panels.append(
+                mo.ui.altair_chart(
+                    plots.group_stacked_bars(plots.group_share_frame(display_result, "group"))
+                )
+            )
+        if "date" in _columns:
+            _parsed, _unparsed = plots.parse_dates(display_result.metadata["date"])
+            _readable = len(_parsed) - _unparsed
+            _panels.append(mo.md(f"**{_readable}** of **{len(_parsed)}** dates were readable."))
+            if _unparsed:
+                _panels.append(
+                    mo.callout(
+                        mo.md(
+                            f"**The app could not read {_unparsed} of {len(_parsed)} dates.**"
+                            " Use the ISO format YYYY-MM-DD, or choose another column."
+                        ),
+                        kind="warn",
+                    )
+                )
+            if _readable:
+                _bin = plots.choose_date_bin(_parsed)
+                _panels.append(mo.md(f"Binned by **{_bin}**."))
+                _panels.append(
+                    mo.ui.altair_chart(
+                        plots.time_line_chart(plots.time_share_frame(display_result, _parsed, _bin))
+                    )
+                )
+        if _panels:
+            _tabs["Metadata"] = mo.vstack(_panels)
+
+        _report = metrics.diagnostics(display_result)
+        _numbers = pd.DataFrame(
+            {
+                "Documents used": [_report["documents_used"]],
+                "Vocabulary": [_report["vocabulary_size"]],
+                "Topics": [_report["topic_count"]],
+                "Topic diversity": [f"{_report['topic_diversity']:.2f}"],
+                "Mean pairwise similarity": [f"{_report['mean_pairwise_similarity']:.2f}"],
+                "Weak dominant scores": [f"{_report['weak_dominant_share']:.0%}"],
+            }
+        )
+        _quality = (
+            f"Reconstruction error: {_report['reconstruction_error']:.3f}"
+            if _report["reconstruction_error"] is not None
+            else f"Perplexity: {_report['perplexity']:.1f}"
+        )
+        _tabs["Diagnostics"] = mo.vstack(
+            [
+                mo.ui.table(_numbers, selection=None),
+                mo.md(f"**{_quality}**"),
+                *[
+                    mo.callout(mo.md(f"**{_note.detail}** {_note.recovery}"), kind="warn")
+                    for _note in _report["notices"]
+                ],
+                mo.ui.altair_chart(
+                    plots.score_histogram(
+                        pd.DataFrame({"score": display_result.dominant_topic_score})
+                    )
+                ),
+                mo.accordion(
+                    {
+                        "How to read the diagnostics": mo.md(
+                            """
+                        These numbers describe the run. They are not a quality score. A model is
+                        good when its topics help you answer your question.
+                        """
+                        )
+                    }
+                ),
+            ]
+        )
+        _view = mo.ui.tabs(_tabs)
     _view
     return
 
@@ -711,30 +804,51 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(display_result, exports, mo):
+def _(mo):
+    include_text = mo.ui.checkbox(value=False, label="Include the document text in the CSV")
+    include_text
+    return (include_text,)
+
+
+@app.cell(hide_code=True)
+def _(display_result, exports, include_text, mo, pending_config):
     if display_result is None:
         _view = mo.md("*Run the model to download the results.*")
     else:
         _files = {
-            "documents_topics.csv": exports.documents_topics_frame(display_result),
+            "documents_topics.csv": exports.documents_topics_frame(
+                display_result, include_text.value
+            ),
             "topics.csv": exports.topics_frame(display_result),
             "topic_terms.csv": exports.topic_terms_frame(display_result),
             "topic_similarity.csv": exports.topic_similarity_frame(display_result),
         }
-        _view = mo.hstack(
-            [
-                mo.download(
-                    data=exports.to_csv_bytes(frame),
-                    filename=name,
-                    label=name,
-                    mimetype="text/csv",
-                )
-                for name, frame in _files.items()
-            ],
-            justify="start",
-            gap=1,
-            wrap=True,
+        _buttons = [
+            mo.download(
+                data=exports.to_csv_bytes(frame),
+                filename=name,
+                label=name,
+                mimetype="text/csv",
+            )
+            for name, frame in _files.items()
+        ]
+        _buttons.append(
+            mo.download(
+                data=exports.config_json(pending_config, display_result.topic_names),
+                filename="config.json",
+                label="config.json",
+                mimetype="application/json",
+            )
         )
+        _buttons.append(
+            mo.download(
+                data=exports.project_zip(display_result, pending_config, include_text.value),
+                filename="project.zip",
+                label="project.zip",
+                mimetype="application/zip",
+            )
+        )
+        _view = mo.hstack(_buttons, justify="start", gap=1, wrap=True)
     _view
     return
 

@@ -21,7 +21,7 @@ dependencies = [
     # serialize the complex128 values that the newer numpy returns from the
     # PCoA step. The app then dies with "Object of type complex128 is not JSON
     # serializable". Remove this ceiling only after pyLDAvis fixes it.
-    "numpy>=2.2,<2.3",
+    "numpy>=2.2,<2.6",
 ]
 
 [project.urls]

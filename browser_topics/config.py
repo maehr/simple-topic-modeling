@@ -20,6 +20,7 @@ __all__ = [
     "NgramChoice",
     "PreprocessConfig",
     "StopWordConfig",
+    "load_app_config",
 ]
 
 Language = Literal["en", "de", "fr", "it", "es"]
@@ -202,3 +203,18 @@ class AppConfig(BaseModel):
             f" · {self.model.n_topics} topics"
             f" · max {self.model.max_features:,} terms"
         )
+
+
+def load_app_config(payload: dict[str, object]) -> AppConfig:
+    """Build an `AppConfig` from an imported `config.json`.
+
+    The export adds result fields such as `topic_names`. This loader drops any key that
+    `AppConfig` does not own, so a file that the app wrote always imports again.
+
+    >>> load_app_config({"language": "sp", "topic_names": ["Economy"]}).language
+    'es'
+    >>> load_app_config({}).model.n_topics
+    10
+    """
+    known = {key: value for key, value in payload.items() if key in AppConfig.model_fields}
+    return AppConfig.model_validate(known)

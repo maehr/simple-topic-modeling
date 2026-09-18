@@ -16,23 +16,32 @@
 
 	<body>
 		<main id="main"></main>
-		<script src="assets/stlite/build/stlite.js"></script>
-		<script>
-			stlite.mount(
+		<noscript>
+			<p>This application needs JavaScript. It runs Python in your browser with WebAssembly.</p>
+		</noscript>
+		<script type="module">
+			import { mount } from './assets/stlite/build/stlite.js';
+
+			// Resolve every asset against the page itself. stlite runs Python in a web worker,
+			// where a bare relative URL does not resolve against the page. An absolute URL to
+			// one deployment would break forks and local runs, so build it at load time.
+			const base = new URL('.', window.location.href).href;
+
+			mount(
 				{
 					requirements: [
 						'pandas',
 						'scikit-learn',
-						'https://maehr.github.io/simple-topic-modeling/assets/dist/pyLDAvis-3.4.1-py2.py3-none-any.whl'
+						new URL('assets/dist/pyLDAvis-3.4.1-py3-none-any.whl', base).href
 					],
 					entrypoint: 'app.py',
 					files: {
-						'app.py': {
-							url: 'src/app.py?nocache=1'
-						},
-						'utils/stopwords.py': {
-							url: 'src/utils/stopwords.py'
-						}
+						'app.py': { url: new URL('src/app.py', base).href },
+						'topic_model.py': { url: new URL('src/topic_model.py', base).href },
+						'utils/stopwords.py': { url: new URL('src/utils/stopwords.py', base).href }
+					},
+					streamlitConfig: {
+						'client.toolbarMode': 'viewer'
 					}
 				},
 				document.getElementById('main')

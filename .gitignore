@@ -433,5 +433,9 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/git,node,linux,macos,dotenv,windows,visualstudiocode,python,jupyternotebooks
 
-!assets/stlite/build/
+# The stlite runtime is fetched at deploy time by .github/workflows/pages.yml.
+# It is never committed. See README.md for how to fetch it for a local run.
+assets/stlite/
+
+# The pyLDAvis wheel IS committed. scripts/build_pyldavis_wheel.py rebuilds it.
 !assets/dist/

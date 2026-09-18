@@ -1,3 +1,19 @@
 theme: jekyll-theme-minimal
 logo: android-chrome-512x512.png
 show_downloads: true
+
+# Jekyll REPLACES its default exclude list when this key is set, so the usual
+# defaults (node_modules, vendor, Gemfile) must be repeated here.
+exclude:
+  - node_modules/
+  - vendor/
+  - Gemfile
+  - Gemfile.lock
+  - .venv/
+  - scripts/
+  - tests/
+  - poetry.lock
+  - pnpm-lock.yaml
+  - pyproject.toml
+  - package.json
+  - cliff.toml

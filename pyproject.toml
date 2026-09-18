@@ -1,0 +1,65 @@
+[project]
+name = "browser-topics"
+version = "0.1.0"
+description = "Browser Topic Explorer: privacy-friendly topic modelling that runs in the browser."
+readme = "README.md"
+requires-python = ">=3.13"
+license = "AGPL-3.0-only"
+authors = [{ name = "Moritz Mähr" }]
+dependencies = [
+    "altair>=6.0.0",
+    "marimo>=0.24.2",
+    "numpy>=2.4.6",
+    "pandas>=3.0.2",
+    "pillow>=12.2.0",
+    "pydantic>=2.13.5",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.18.0",
+    "wordcloud>=1.9.6",
+]
+
+[dependency-groups]
+dev = [
+    "prek>=0.5.3",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.8",
+    "ty==0.0.82",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["browser_topics"]
+
+[tool.ruff]
+line-length = 100
+src = [".", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF", "D", "ANN"]
+ignore = ["D107", "D203", "D213"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "ANN"]
+"app.py" = ["D", "ANN", "B018"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ty.src]
+include = ["browser_topics", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["browser_topics", "tests"]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+source = ["browser_topics"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]

@@ -1,3 +1,4 @@
+import hashlib
 from io import StringIO
 
 import pandas as pd
@@ -150,8 +151,16 @@ def main():
 
         # Stored results belong to one exact set of inputs. Anything else would
         # show a stale model after the user changes a setting.
+        # The digest covers the file contents, not only the names. A user can
+        # upload a changed file under the same name, and a name-only signature
+        # would then show the previous results as if they were current.
+        corpus_digest = hashlib.sha256(
+            "\0".join(df["filename"]).encode()
+            + b"\0\0"
+            + "\0".join(df["content"]).encode()
+        ).hexdigest()
         signature = (
-            tuple(df["filename"]),
+            corpus_digest,
             stop_words_arg,
             token_pattern,
             ngram_range,

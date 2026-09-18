@@ -33,7 +33,10 @@ NGRAM_OPTIONS = {
 # scikit-learn's own default token pattern for the "word" analyzer.
 DEFAULT_TOKEN_PATTERN = r"(?u)\b\w\w+\b"
 # Drops single- and two-character tokens and tokens starting with a digit.
-SHORT_WORD_TOKEN_PATTERN = r"(?u)\b[a-zA-Z][a-zA-Z0-9_]{2,}\b"
+# [^\W\d_] is a Unicode letter: a word character that is not a digit and not an
+# underscore. An [a-zA-Z] class here would drop every accented word, and the app
+# offers French, German, and Spanish.
+SHORT_WORD_TOKEN_PATTERN = r"(?u)\b[^\W\d_][^\W_]{2,}\b"
 
 
 class EmptyVocabularyError(Exception):

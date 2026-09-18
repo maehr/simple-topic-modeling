@@ -3,7 +3,7 @@ name = "simple-topic-modeling"
 version = "0.1.0"
 description = "This app is a simple topic modeling tool that uses Latent Dirichlet Allocation (LDA) to discover topics in a corpus of text documents."
 authors = [{ name = "Moritz Mähr", email = "moritz.maehr@gmail.com" }]
-license = "AGPL-3.0"
+license = "AGPL-3.0-only"
 readme = "README.md"
 keywords = ["topic modeling", "lda", "streamlit"]
 

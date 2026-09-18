@@ -1,5 +1,5 @@
 """
-This module contains lists of stopwords for French and German languages.
+This module contains lists of stopwords for the French, German, and Spanish languages.
 The stopwords are taken from https://github.com/stopwords-iso/ and
 licensed under MIT License.
 """

@@ -4,7 +4,7 @@
 	"author": "Moritz Mähr <moritz.maehr@gmail.com>",
 	"version": "0.1.0",
 	"url": "https://github.com/maehr/simple-topic-modeling/issues",
-	"license": "AGPL-3.0",
+	"license": "AGPL-3.0-only",
 	"packageManager": "pnpm@12.4.1",
 	"scripts": {
 		"check": "prettier --ignore-path .gitignore --ignore-path .prettierignore --check .",

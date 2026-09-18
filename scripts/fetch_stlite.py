@@ -89,6 +89,18 @@ def update_pin(package: str, version: str) -> None:
     lock["integrity"] = metadata["dist"]["integrity"]
 
     payload = download(metadata["dist"]["tarball"])
+
+    # Verify before the hash is written to the lock file. Otherwise a registry
+    # response whose metadata and payload disagree would be recorded as
+    # trusted, and every later build would accept it.
+    declared = metadata["dist"]["integrity"]
+    actual = integrity_of(payload)
+    if actual != declared:
+        raise SystemExit(
+            "REFUSING TO REPIN: the tarball does not match the integrity hash "
+            f"the registry declares.\n  declared: {declared}\n  actual:   {actual}"
+        )
+
     wheels = []
     with tarfile.open(fileobj=io.BytesIO(payload), mode="r:gz") as archive:
         wheels = [

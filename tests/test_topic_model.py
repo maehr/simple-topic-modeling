@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pytest
 
@@ -254,3 +256,36 @@ class TestTopicOrderRemap:
 
         dominant_by_theme = df.groupby("theme")["Dominant_Topic"].first()
         assert dominant_by_theme.nunique() == 3
+
+
+class TestAccentedWordsSurvivePreprocessing:
+    """The app offers French, German, and Spanish stop word lists.
+
+    An ASCII-only token pattern silently dropped every accented word before
+    LDA ever saw it, which quietly degraded every non-English corpus.
+    """
+
+    @pytest.mark.parametrize(
+        "word",
+        ["après", "Zürich", "café", "médecin", "über", "años", "naïf"],
+    )
+    def test_short_word_pattern_keeps_accented_words(self, word):
+        pattern = resolve_token_pattern(True)
+        assert re.fullmatch(pattern, word) is not None
+
+    @pytest.mark.parametrize("token", ["a", "ab", "12", "3abc", "_x"])
+    def test_short_word_pattern_still_drops_noise(self, token):
+        pattern = resolve_token_pattern(True)
+        assert re.fullmatch(pattern, token) is None
+
+    def test_accented_words_reach_the_vocabulary(self):
+        docs = ("après le café à Zürich",) * 4
+        _, dtm, _, _ = fit_topic_model(
+            docs,
+            None,
+            resolve_token_pattern(True),
+            (1, 1),
+            1,
+            10,
+        )
+        assert dtm.shape[1] > 0

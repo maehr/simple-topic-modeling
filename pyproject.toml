@@ -57,6 +57,14 @@ convention = "google"
 [tool.ty.src]
 include = ["browser_topics", "tests"]
 
+# Altair builds `mark_*` methods dynamically, so ty cannot infer that they return a Chart.
+# The rule stays on everywhere else.
+[[tool.ty.overrides]]
+include = ["browser_topics/plots.py"]
+
+[tool.ty.overrides.rules]
+unresolved-attribute = "ignore"
+
 [tool.pytest.ini_options]
 testpaths = ["browser_topics", "tests"]
 addopts = "--strict-markers"

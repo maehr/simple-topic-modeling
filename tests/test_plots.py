@@ -7,10 +7,18 @@ from browser_topics.io import build_corpus
 from browser_topics.modeling import fit_topic_model
 from browser_topics.plots import (
     SNIPPET_LENGTH,
+    document_frame,
+    document_scatter,
+    prevalence_bars,
     representative_documents,
+    similarity_heatmap,
+    similarity_long_frame,
     snippet,
+    top_term_bars,
     top_term_frame,
     topic_cards,
+    topic_map,
+    word_cloud_png,
 )
 from browser_topics.result import _example_result, rename_topic
 
@@ -88,3 +96,109 @@ def test_representative_documents_show_a_snippet_not_the_full_text():
     frame = representative_documents(built, 0)
     assert all(len(value) <= SNIPPET_LENGTH + 1 for value in frame["snippet"])
     assert all(value.endswith("…") for value in frame["snippet"])
+
+
+def _spec(chart):
+    return chart.to_dict()
+
+
+def test_topic_map_marks_size_by_prevalence(result):
+    spec = _spec(topic_map(result))
+    assert spec["mark"]["type"] == "circle"
+    assert spec["encoding"]["size"]["field"] == "prevalence"
+
+
+def test_projection_axes_are_de_emphasized(result):
+    spec = _spec(topic_map(result))
+    for channel in ("x", "y"):
+        axis = spec["encoding"][channel]["axis"]
+        assert axis["labels"] is False
+        assert axis["ticks"] is False
+        assert axis["grid"] is False
+
+
+def test_prevalence_bars_are_sorted_by_value(result):
+    spec = _spec(prevalence_bars(result))
+    assert spec["encoding"]["y"]["sort"] == "-x"
+
+
+def test_similarity_heatmap_covers_the_full_matrix(result):
+    frame = similarity_long_frame(result)
+    assert len(frame) == result.n_topics**2
+    assert _spec(similarity_heatmap(result))["mark"]["type"] == "rect"
+
+
+def test_similarity_scale_is_fixed_so_runs_compare(result):
+    spec = _spec(similarity_heatmap(result))
+    assert spec["encoding"]["color"]["scale"]["domain"] == [0, 1]
+
+
+def test_every_chart_carries_a_title(result):
+    charts = [
+        topic_map(result),
+        prevalence_bars(result),
+        similarity_heatmap(result),
+        top_term_bars(result, 0),
+        document_scatter(document_frame(result)),
+    ]
+    for chart in charts:
+        assert _spec(chart)["title"]
+
+
+def test_every_chart_carries_a_tooltip(result):
+    charts = [
+        topic_map(result),
+        prevalence_bars(result),
+        similarity_heatmap(result),
+        top_term_bars(result, 0),
+        document_scatter(document_frame(result)),
+    ]
+    for chart in charts:
+        assert _spec(chart)["encoding"]["tooltip"]
+
+
+def test_document_frame_has_one_row_per_document(result):
+    frame = document_frame(result)
+    assert len(frame) == result.n_documents
+    assert frame["topic"].isin(result.topic_names).all()
+
+
+def test_document_frame_carries_metadata():
+    texts = [
+        "cat dog runs fast",
+        "cat sleeps warm couch",
+        "dog barks postman loudly",
+        "bird sings morning song",
+        "bird flies above trees",
+        "fish swims cold water",
+    ]
+    metadata = pd.DataFrame({"group": list("aabbcc")})
+    corpus, _ = build_corpus(texts, [str(index) for index in range(6)], metadata)
+    built = fit_topic_model(corpus, AppConfig(model=ModelConfig(n_topics=2, min_df=1)))
+    assert "group" in document_frame(built).columns
+
+
+def test_scatter_sampling_is_reproducible(result):
+    big = pd.concat([document_frame(result)] * 40, ignore_index=True)
+    first = document_scatter(big, sample_limit=50).data
+    second = document_scatter(big, sample_limit=50).data
+    assert first["document_id"].tolist() == second["document_id"].tolist()
+
+
+def test_scatter_keeps_every_point_below_the_limit(result):
+    frame = document_frame(result)
+    assert len(document_scatter(frame, sample_limit=10_000).data) == len(frame)
+
+
+def test_word_cloud_is_a_png(result):
+    data = word_cloud_png(result, 0)
+    assert data.startswith(b"\x89PNG")
+    assert len(data) > 1000
+
+
+def test_word_cloud_is_deterministic(result):
+    assert word_cloud_png(result, 0) == word_cloud_png(result, 0)
+
+
+def test_word_cloud_uses_the_renamed_topic_terms(result):
+    assert word_cloud_png(result, 0) != word_cloud_png(result, 1)

@@ -36,7 +36,6 @@ async def _():
         )
         await micropip.install(str(_wheel))
 
-    import altair as alt
     import pandas as pd
 
     from browser_topics import exports, io, modeling, plots
@@ -60,7 +59,6 @@ async def _():
         PreprocessConfig,
         StopWordConfig,
         TopicError,
-        alt,
         effective_stopwords,
         exports,
         frequent_terms,
@@ -602,7 +600,28 @@ def _(display_result, mo, rename_input, set_overrides, topic_select):
 
 
 @app.cell(hide_code=True)
-def _(alt, display_result, mo, plots, topic_select):
+def _(display_result, mo):
+    _names = display_result.topic_names if display_result is not None else []
+    topic_filter = mo.ui.multiselect(options=_names, value=[], label="Show only these topics")
+    score_filter = mo.ui.slider(
+        0.0, 1.0, value=0.0, step=0.05, label="Minimum dominant-topic score", show_value=True
+    )
+    document_search = mo.ui.text(
+        label="Search the text", placeholder="word or phrase, then press Enter"
+    )
+    return document_search, score_filter, topic_filter
+
+
+@app.cell(hide_code=True)
+def _(
+    display_result,
+    document_search,
+    mo,
+    plots,
+    score_filter,
+    topic_filter,
+    topic_select,
+):
     if display_result is None:
         _view = mo.md("*Run the model to explore the topics.*")
     else:
@@ -610,20 +629,13 @@ def _(alt, display_result, mo, plots, topic_select):
             [
                 mo.md("### Topics at a glance"),
                 mo.ui.table(plots.topic_cards(display_result), selection=None, page_size=30),
+                mo.ui.altair_chart(plots.topic_map(display_result)),
+                mo.ui.altair_chart(plots.prevalence_bars(display_result)),
+                mo.ui.altair_chart(plots.similarity_heatmap(display_result)),
             ]
         )
+
         _index = topic_select.value if topic_select.value is not None else 0
-        _terms = plots.top_term_frame(display_result, _index)
-        _bars = (
-            alt.Chart(_terms, title=f"Top terms · {display_result.topic_names[_index]}")
-            .mark_bar()
-            .encode(
-                x=alt.X("weight:Q", title="Share of the topic"),
-                y=alt.Y("term:N", sort="-x", title=None),
-                tooltip=["term:N", alt.Tooltip("weight:Q", format=".3f")],
-            )
-            .properties(height=300)
-        )
         _topics = mo.vstack(
             [
                 topic_select,
@@ -631,7 +643,8 @@ def _(alt, display_result, mo, plots, topic_select):
                     f"**Prevalence:** {display_result.topic_prevalence[_index]:.1%} of the corpus"
                     f" · **{display_result.n_documents}** documents modelled"
                 ),
-                mo.ui.altair_chart(_bars),
+                mo.ui.altair_chart(plots.top_term_bars(display_result, _index)),
+                mo.image(plots.word_cloud_png(display_result, _index), width=700),
                 mo.md("### Representative documents"),
                 mo.ui.table(plots.representative_documents(display_result, _index), selection=None),
                 mo.accordion(
@@ -647,7 +660,46 @@ def _(alt, display_result, mo, plots, topic_select):
                 ),
             ]
         )
-        _view = mo.ui.tabs({"Overview": _overview, "Topics": _topics})
+
+        _documents = plots.document_frame(display_result)
+        if topic_filter.value:
+            _documents = _documents[_documents["topic"].isin(topic_filter.value)]
+        if score_filter.value > 0:
+            _documents = _documents[_documents["score"] >= score_filter.value]
+        if document_search.value.strip():
+            _documents = _documents[
+                _documents["snippet"].str.contains(
+                    document_search.value.strip(), case=False, regex=False
+                )
+            ]
+        _documents = _documents.reset_index(drop=True)
+        if _documents.empty:
+            _document_view = mo.callout(
+                mo.md("**No document matches these filters.** Widen them to see results."),
+                kind="warn",
+            )
+        else:
+            _document_view = mo.vstack(
+                [
+                    mo.ui.altair_chart(plots.document_scatter(_documents)),
+                    mo.ui.table(_documents.drop(columns=["x", "y"]), selection=None),
+                ]
+            )
+        _explore = mo.vstack(
+            [
+                mo.hstack(
+                    [topic_filter, score_filter, document_search],
+                    justify="start",
+                    gap=2,
+                    wrap=True,
+                ),
+                mo.md(
+                    f"**{len(_documents)}** of **{display_result.n_documents}** documents shown."
+                ),
+                _document_view,
+            ]
+        )
+        _view = mo.ui.tabs({"Overview": _overview, "Topics": _topics, "Documents": _explore})
     _view
     return
 

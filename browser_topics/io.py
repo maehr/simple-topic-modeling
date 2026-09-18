@@ -1,0 +1,324 @@
+"""Corpus import.
+
+`SPECS.md` section 2 accepts structured tables and generic UTF-8 text. This module decodes bytes,
+parses the structured formats, strips markup, splits a single file into documents, and reports the
+corpus statistics.
+"""
+
+from __future__ import annotations
+
+import io
+import json
+import re
+from dataclasses import dataclass
+from html.parser import HTMLParser
+from statistics import median
+from typing import Literal
+
+import pandas as pd
+
+from browser_topics.errors import DecodeError, NoUsableTextError, UnsupportedFileError
+
+__all__ = [
+    "Corpus",
+    "CorpusStats",
+    "FileKind",
+    "SplitMode",
+    "UploadedFile",
+    "build_corpus",
+    "corpus_stats",
+    "decode_text",
+    "detect_kind",
+    "read_table",
+    "split_text",
+    "strip_markup",
+]
+
+FileKind = Literal["csv", "tsv", "json", "jsonl", "text"]
+SplitMode = Literal["whole", "blank_lines", "lines"]
+
+_TABLE_EXTENSIONS: dict[str, FileKind] = {
+    ".csv": "csv",
+    ".tsv": "tsv",
+    ".tab": "tsv",
+    ".json": "json",
+    ".jsonl": "jsonl",
+    ".ndjson": "jsonl",
+}
+_MARKUP_EXTENSIONS = frozenset({".html", ".htm", ".xml"})
+_MARKDOWN_EXTENSIONS = frozenset({".md", ".markdown"})
+_BINARY_EXTENSIONS = frozenset(
+    {".pdf", ".docx", ".doc", ".xlsx", ".zip", ".png", ".jpg", ".jpeg", ".gif", ".mp3", ".mp4"}
+)
+
+_BLANK_LINES = re.compile(r"\n\s*\n")
+_MARKDOWN_NOISE = re.compile(
+    r"^\s{0,3}#{1,6}\s+|^\s{0,3}>\s?|^\s{0,3}[-*+]\s+|^\s{0,3}\d+\.\s+|^\s*[-*_]{3,}\s*$",
+    re.MULTILINE,
+)
+_MARKDOWN_INLINE = re.compile(r"!?\[([^\]]*)\]\([^)]*\)|[*_`~]{1,3}")
+
+
+@dataclass(frozen=True, slots=True)
+class UploadedFile:
+    """One file that a person added.
+
+    >>> UploadedFile("notes.txt", b"hello").name
+    'notes.txt'
+    """
+
+    name: str
+    data: bytes
+
+    @property
+    def suffix(self) -> str:
+        """Return the lowercase extension, including the dot.
+
+        >>> UploadedFile("Report.CSV", b"").suffix
+        '.csv'
+        >>> UploadedFile("noextension", b"").suffix
+        ''
+        """
+        _, dot, tail = self.name.rpartition(".")
+        return f"{dot}{tail}".lower() if dot else ""
+
+
+@dataclass(frozen=True, slots=True)
+class CorpusStats:
+    """The counts that `SPECS.md` section 2 shows after import.
+
+    >>> CorpusStats(4, 1, 1, 12.0).kept
+    3
+    """
+
+    total: int
+    empty: int
+    duplicates: int
+    median_length: float
+
+    @property
+    def kept(self) -> int:
+        """Return the number of documents that the app models.
+
+        >>> CorpusStats(10, 2, 3, 40.0).kept
+        8
+        """
+        return self.total - self.empty
+
+
+@dataclass(frozen=True, slots=True)
+class Corpus:
+    """A parsed corpus, ready for cleaning.
+
+    >>> corpus = Corpus(["alpha", "beta"], ["a", "b"], pd.DataFrame(index=[0, 1]))
+    >>> len(corpus)
+    2
+    """
+
+    documents: list[str]
+    document_ids: list[str]
+    metadata: pd.DataFrame
+
+    def __len__(self) -> int:
+        """Return the document count.
+
+        >>> len(Corpus(["x"], ["1"], pd.DataFrame(index=[0])))
+        1
+        """
+        return len(self.documents)
+
+
+def detect_kind(filename: str) -> FileKind:
+    """Map a file name to a reader.
+
+    An unknown extension falls back to the generic text reader, as `SPECS.md` section 2 requires.
+
+    >>> detect_kind("rows.csv")
+    'csv'
+    >>> detect_kind("rows.NDJSON")
+    'jsonl'
+    >>> detect_kind("notes.md")
+    'text'
+    >>> detect_kind("mystery.q7")
+    'text'
+    """
+    suffix = UploadedFile(filename, b"").suffix
+    return _TABLE_EXTENSIONS.get(suffix, "text")
+
+
+def decode_text(file: UploadedFile) -> str:
+    r"""Decode a file as UTF-8.
+
+    A known binary extension or a NUL byte raises `UnsupportedFileError`. Any other decoding
+    failure raises `DecodeError`.
+
+    >>> decode_text(UploadedFile("a.txt", b"caf\xc3\xa9"))
+    'café'
+    >>> decode_text(UploadedFile("a.pdf", b"%PDF-1.4"))
+    Traceback (most recent call last):
+    browser_topics.errors.UnsupportedFileError: ...
+    >>> decode_text(UploadedFile("a.txt", b"\xff\xfe\x00bad"))
+    Traceback (most recent call last):
+    browser_topics.errors.UnsupportedFileError: ...
+    """
+    if UploadedFile(file.name, b"").suffix in _BINARY_EXTENSIONS or b"\x00" in file.data:
+        raise UnsupportedFileError(file.name)
+    try:
+        return file.data.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise DecodeError(file.name) from error
+
+
+class _TagStripper(HTMLParser):
+    """Collect the text of an HTML or XML document and drop the tags."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self._skip = 0
+
+    def handle_starttag(self, tag: str, attrs: object) -> None:
+        """Start skipping the body of a script or style element."""
+        if tag in {"script", "style"}:
+            self._skip += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        """Stop skipping at the end of a script or style element."""
+        if tag in {"script", "style"} and self._skip:
+            self._skip -= 1
+
+    def handle_data(self, data: str) -> None:
+        """Keep the text of every element that is not skipped."""
+        if not self._skip:
+            self.parts.append(data)
+
+
+def strip_markup(text: str, filename: str) -> str:
+    r"""Remove HTML, XML, or Markdown syntax and keep the readable text.
+
+    The app adds no parser dependency, as `SPECS.md` section 2 requires.
+
+    >>> strip_markup("<p>Hello <b>world</b></p>", "page.html")
+    'Hello world'
+    >>> strip_markup("<p>a</p><script>var x=1</script>", "page.html")
+    'a'
+    >>> strip_markup("# Title\n\nSome **bold** text", "notes.md")
+    'Title Some bold text'
+    >>> strip_markup("[link](http://example.com) here", "notes.md")
+    'link here'
+    >>> strip_markup("plain text", "notes.txt")
+    'plain text'
+    """
+    suffix = UploadedFile(filename, b"").suffix
+    if suffix in _MARKUP_EXTENSIONS:
+        stripper = _TagStripper()
+        stripper.feed(text)
+        stripper.close()
+        text = " ".join(stripper.parts)
+    elif suffix in _MARKDOWN_EXTENSIONS:
+        text = _MARKDOWN_NOISE.sub(" ", text)
+        text = _MARKDOWN_INLINE.sub(r"\1", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def split_text(text: str, mode: SplitMode) -> list[str]:
+    r"""Split one text file into documents.
+
+    >>> split_text("a\n\nb", "whole")
+    ['a\n\nb']
+    >>> split_text("a\n\nb", "blank_lines")
+    ['a', 'b']
+    >>> split_text("a\nb", "lines")
+    ['a', 'b']
+    >>> split_text("a\n\n\n b ", "blank_lines")
+    ['a', 'b']
+    """
+    if mode == "whole":
+        return [text.strip()] if text.strip() else []
+    parts = _BLANK_LINES.split(text) if mode == "blank_lines" else text.splitlines()
+    return [part.strip() for part in parts if part.strip()]
+
+
+def read_table(file: UploadedFile) -> pd.DataFrame:
+    r"""Parse a CSV, TSV, JSON, or JSONL file into a frame.
+
+    >>> read_table(UploadedFile("r.csv", b"text,group\nhello,a\n")).columns.tolist()
+    ['text', 'group']
+    >>> read_table(UploadedFile("r.tsv", b"text\tid\nhello\t1\n")).shape
+    (1, 2)
+    >>> read_table(UploadedFile("r.jsonl", b'{"text":"a"}\n{"text":"b"}\n')).shape
+    (2, 1)
+    >>> read_table(UploadedFile("r.json", b'[{"text":"a"}]')).shape
+    (1, 1)
+    """
+    kind = detect_kind(file.name)
+    text = decode_text(file)
+    if kind == "csv":
+        return pd.read_csv(io.StringIO(text))
+    if kind == "tsv":
+        return pd.read_csv(io.StringIO(text), sep="\t")
+    if kind == "jsonl":
+        rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+        return pd.DataFrame(rows)
+    payload = json.loads(text)
+    rows = payload if isinstance(payload, list) else [payload]
+    return pd.DataFrame(rows)
+
+
+def corpus_stats(documents: list[str]) -> CorpusStats:
+    """Report the counts that `SPECS.md` section 2 shows.
+
+    The median length counts characters of the non-empty documents.
+
+    >>> stats = corpus_stats(["alpha", "beta", "", "alpha"])
+    >>> stats.total, stats.empty, stats.duplicates
+    (4, 1, 1)
+    >>> stats.median_length
+    5.0
+    >>> corpus_stats([]).median_length
+    0.0
+    """
+    kept = [doc for doc in documents if doc.strip()]
+    duplicates = len(kept) - len({doc for doc in kept})
+    lengths = [len(doc) for doc in kept]
+    return CorpusStats(
+        total=len(documents),
+        empty=len(documents) - len(kept),
+        duplicates=duplicates,
+        median_length=float(median(lengths)) if lengths else 0.0,
+    )
+
+
+def build_corpus(
+    documents: list[str],
+    document_ids: list[str],
+    metadata: pd.DataFrame | None = None,
+) -> tuple[Corpus, CorpusStats]:
+    """Drop the empty documents and return the corpus with its statistics.
+
+    `SPECS.md` section 2 excludes an empty document and shows the count.
+
+    >>> corpus, stats = build_corpus(["alpha", "", "beta"], ["a", "b", "c"])
+    >>> corpus.documents
+    ['alpha', 'beta']
+    >>> corpus.document_ids
+    ['a', 'c']
+    >>> stats.empty
+    1
+    >>> build_corpus(["", "  "], ["a", "b"])
+    Traceback (most recent call last):
+    browser_topics.errors.NoUsableTextError: ...
+    """
+    stats = corpus_stats(documents)
+    keep = [index for index, doc in enumerate(documents) if doc.strip()]
+    if not keep:
+        raise NoUsableTextError
+    frame = pd.DataFrame(index=range(len(documents))) if metadata is None else metadata
+    return (
+        Corpus(
+            documents=[documents[index].strip() for index in keep],
+            document_ids=[document_ids[index] for index in keep],
+            metadata=frame.iloc[keep].reset_index(drop=True),
+        ),
+        stats,
+    )

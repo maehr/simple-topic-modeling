@@ -55,6 +55,7 @@ include = ["browser_topics", "tests"]
 [tool.pytest.ini_options]
 testpaths = ["browser_topics", "tests"]
 addopts = "--strict-markers"
+doctest_optionflags = ["ELLIPSIS", "IGNORE_EXCEPTION_DETAIL", "NORMALIZE_WHITESPACE"]
 
 [tool.coverage.run]
 source = ["browser_topics"]

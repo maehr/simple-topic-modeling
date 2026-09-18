@@ -10,8 +10,14 @@ from functools import lru_cache
 from importlib.resources import files
 
 from browser_topics.config import Language, StopWordConfig
+from browser_topics.preprocess import token_pattern
 
-__all__ = ["base_stopwords", "effective_stopwords", "parse_word_input"]
+__all__ = [
+    "base_stopwords",
+    "effective_stopwords",
+    "parse_word_input",
+    "vectorizer_stopwords",
+]
 
 _SEPARATORS = re.compile(r"[,;\s]+")
 
@@ -68,3 +74,27 @@ def effective_stopwords(language: Language, config: StopWordConfig) -> frozenset
     added = parse_word_input(config.added)
     keep = parse_word_input(config.always_keep)
     return frozenset((base | added) - keep)
+
+
+def vectorizer_stopwords(words: frozenset[str], min_token_length: int) -> list[str] | None:
+    """Expand a stop-word set into the tokens that the vectorizer produces.
+
+    A list such as spaCy's English list holds contractions like `'ll`. The token pattern splits
+    those into `ll`, which would survive as a term. Expanding each entry through the same pattern
+    keeps the stop words consistent with the tokenizer, and silences the scikit-learn warning.
+
+    The result is sorted, so a run stays reproducible. An empty set returns `None`, which is what
+    the scikit-learn vectorizers expect for "no stop words".
+
+    >>> vectorizer_stopwords(frozenset({"'ll", "the"}), 2)
+    ["'ll", 'll', 'the']
+    >>> vectorizer_stopwords(frozenset({"new york"}), 2)
+    ['new', 'new york', 'york']
+    >>> vectorizer_stopwords(frozenset(), 2) is None
+    True
+    """
+    pattern = re.compile(token_pattern(min_token_length))
+    expanded = set(words)
+    for word in words:
+        expanded.update(pattern.findall(word))
+    return sorted(expanded) or None

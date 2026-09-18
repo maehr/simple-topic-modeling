@@ -74,6 +74,13 @@ def clean_texts(texts: list[str], config: PreprocessConfig) -> list[str]:
     return [clean_text(text, config) for text in texts]
 
 
+def _expand(stop_words: frozenset[str], min_token_length: int) -> list[str] | None:
+    """Expand the stop words to match the tokenizer. See `stopwords.vectorizer_stopwords`."""
+    from browser_topics.stopwords import vectorizer_stopwords
+
+    return vectorizer_stopwords(stop_words, min_token_length)
+
+
 def frequent_terms(
     texts: list[str],
     stop_words: frozenset[str],
@@ -94,7 +101,7 @@ def frequent_terms(
     """
     vectorizer = CountVectorizer(
         lowercase=False,
-        stop_words=sorted(stop_words) or None,
+        stop_words=_expand(stop_words, min_token_length),
         token_pattern=token_pattern(min_token_length),
     )
     try:

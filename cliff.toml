@@ -10,6 +10,10 @@ This file records every notable change to Browser Topic Explorer.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Version 2.0.0 replaces version 1, which was a Streamlit app that ran through stlite. The two share
+no code. Version 1 stays at the tag `v1.0.0` and the branch `legacy/streamlit`, and it receives no
+further work.
+
 """
 body = """
 {% if version -%}
@@ -20,7 +24,7 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | upper_first }}
 {% for commit in commits %}
-- {{ commit.message | upper_first }}
+- {% if commit.breaking %}**Breaking:** {% endif %}{{ commit.message | upper_first }}
 {%- endfor %}
 {% endfor %}
 """

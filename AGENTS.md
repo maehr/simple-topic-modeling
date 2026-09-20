@@ -181,3 +181,55 @@ Prefix every cell-local variable with `_`. marimo requires a unique name across 
 
 `marimo edit app.py` runs local CPython. The exported `dist/` runs Pyodide in the browser. A change
 can pass one and fail the other. Always check both before you call the work done.
+
+### Fit only on the run button, and keep the last good result
+
+`SPECS.md` section 4 needs an explicit fit. `SPECS.md` section 8 needs the last good result to
+survive a failed rerun. marimo reruns a cell when any referenced value changes, so these two rules
+need care.
+
+Use this pattern. Do not replace it without a browser test.
+
+* Hold the result, the failure, and the name overrides in `mo.state`.
+* Let the fit cell reference `run_button.value` and the settings.
+* marimo resets `run_button.value` to False after the dependent cells run. A settings change
+  therefore reruns the fit cell without a fit, and the state keeps the previous result.
+* Catch the failure in the fit cell. Store the message. Never clear the result.
+* Compare `result.config` against the live config to raise the *Configuration changed* banner.
+
+`mo.ui.form` does not work here. A form copies the element it wraps, so the app cannot read the live
+value to compare it against the submitted value.
+
+### The demo corpus ships inside the wheel
+
+`SPECS.md` section 9 puts the demo corpus in `assets/`. That path needs a network fetch, which is
+fragile in Pyodide. Keep the file at `browser_topics/data/demo_corpus.csv` instead. `importlib.resources`
+reads it, exactly as it reads the stop-word lists.
+
+### The type checker cannot follow Altair
+
+Altair builds each `mark_*` method at runtime, so `ty` cannot infer that the method returns a chart.
+`pyproject.toml` turns `unresolved-attribute` off for `browser_topics/plots.py` only. Keep the rule
+on for every other file.
+
+### Write the changelog with git-cliff
+
+Write each commit message as a Conventional Commit. `cliff.toml` maps the commit type to a changelog
+group. Run this command after you commit:
+
+```bash
+git-cliff --tag v0.1.0 -o CHANGELOG.md
+```
+
+Change the tag when you bump the version in `pyproject.toml`.
+
+### Tooling that this repository does not have yet
+
+The repository has no remote and no second contributor. These parts of sections 2, 3, 5, and 6 wait:
+
+* GitHub Actions, CodeQL, and `dependency-review-action`.
+* Branch protection and the fork-based pull request flow.
+* `commitizen` hooks. Write the Conventional Commit message by hand.
+* `CODE_OF_CONDUCT.md`.
+
+Add each one when you create the remote. The local gate in section 4 already runs.

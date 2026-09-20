@@ -32,7 +32,13 @@ uv run marimo edit app.py
 
 ## Build the static app
 
-Check the browser compatibility first:
+Build the package wheel first. The browser installs the app from this file.
+
+```bash
+uv build --wheel -o public/wheels
+```
+
+Check the browser compatibility:
 
 ```bash
 uv run marimo check app.py --select MW
@@ -60,7 +66,19 @@ uv run ty check
 uv run pytest --doctest-modules --cov --cov-fail-under=100
 ```
 
-`app.py` holds the user interface. `src/browser_topics/` holds the logic. Tests cover the logic.
+`app.py` holds the user interface. `browser_topics/` holds the logic. Tests cover the logic.
+
+Check the notebook after you edit it. `marimo check` does not catch a name that two cells both
+define.
+
+```bash
+uv run python -c "
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location('notebook_app', 'app.py')
+module = importlib.util.module_from_spec(spec); sys.modules['notebook_app'] = module
+spec.loader.exec_module(module); module.app.run(); print('cells ok')
+"
+```
 
 ## License
 

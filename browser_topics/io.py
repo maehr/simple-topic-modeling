@@ -17,9 +17,15 @@ from importlib.resources import files
 from statistics import median
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 
-from browser_topics.errors import DecodeError, NoUsableTextError, UnsupportedFileError
+from browser_topics.errors import (
+    DecodeError,
+    FriendlyMessage,
+    NoUsableTextError,
+    UnsupportedFileError,
+)
 
 __all__ = [
     "Corpus",
@@ -28,11 +34,13 @@ __all__ = [
     "SplitMode",
     "UploadedFile",
     "build_corpus",
+    "corpus_size_warning",
     "corpus_stats",
     "decode_text",
     "demo_table",
     "detect_kind",
     "read_table",
+    "sample_corpus",
     "split_text",
     "strip_markup",
 ]
@@ -340,3 +348,59 @@ def demo_table() -> pd.DataFrame:
     """
     resource = files("browser_topics") / "data" / "demo_corpus.csv"
     return pd.read_csv(io.StringIO(resource.read_text(encoding="utf-8")))
+
+
+LARGE_DOCUMENT_COUNT = 10_000
+"""`SPECS.md` section 8 warns above this many documents."""
+
+LARGE_TEXT_BYTES = 50 * 1024 * 1024
+"""`SPECS.md` section 8 warns above this much text."""
+
+
+def corpus_size_warning(documents: Sequence[str]) -> FriendlyMessage | None:
+    """Warn when a corpus is large enough to strain the browser.
+
+    Returns `None` when the corpus is a comfortable size.
+
+    >>> corpus_size_warning(["short"]) is None
+    True
+    >>> warning = corpus_size_warning(["x"] * 20_000)
+    >>> warning.detail
+    'This corpus holds 20,000 documents.'
+    """
+    count = len(documents)
+    size = sum(len(document) for document in documents)
+    if count <= LARGE_DOCUMENT_COUNT and size <= LARGE_TEXT_BYTES:
+        return None
+    if count > LARGE_DOCUMENT_COUNT:
+        detail = f"This corpus holds {count:,} documents."
+    else:
+        detail = f"This corpus holds {size / 1024 / 1024:.0f} MB of text."
+    return FriendlyMessage(
+        detail,
+        "The browser may run slowly. Model a sample first, or lower the maximum vocabulary.",
+    )
+
+
+def sample_corpus(corpus: Corpus, size: int, seed: int = 42) -> Corpus:
+    """Take a reproducible sample of a corpus, keeping the document order.
+
+    A sample at or above the corpus size returns the corpus unchanged.
+
+    >>> corpus, _ = build_corpus(["a", "b", "c", "d"], ["1", "2", "3", "4"])
+    >>> len(sample_corpus(corpus, 2))
+    2
+    >>> sample_corpus(corpus, 99) is corpus
+    True
+    >>> sample_corpus(corpus, 2).document_ids == sample_corpus(corpus, 2).document_ids
+    True
+    """
+    if size >= len(corpus):
+        return corpus
+    generator = np.random.default_rng(seed)
+    keep = sorted(generator.choice(len(corpus), size=size, replace=False).tolist())
+    return Corpus(
+        documents=[corpus.documents[index] for index in keep],
+        document_ids=[corpus.document_ids[index] for index in keep],
+        metadata=corpus.metadata.iloc[keep].reset_index(drop=True),
+    )

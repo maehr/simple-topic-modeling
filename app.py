@@ -306,6 +306,42 @@ def _(corpus, corpus_error, load_error, mo, pd, stats):
 
 
 @app.cell(hide_code=True)
+def _(corpus, io, mo):
+    _warning = io.corpus_size_warning(corpus.documents) if corpus is not None else None
+    use_sample = mo.ui.checkbox(value=_warning is not None, label="Model a sample instead")
+    sample_size = mo.ui.number(
+        100,
+        50_000,
+        value=min(5_000, len(corpus)) if corpus else 5_000,
+        step=100,
+        label="Sample size",
+    )
+    _view = (
+        mo.vstack(
+            [
+                mo.callout(
+                    mo.md(f"**{_warning.detail}** {_warning.recovery}"),
+                    kind="warn",
+                ),
+                mo.hstack([use_sample, sample_size], justify="start", gap=2),
+            ]
+        )
+        if _warning is not None
+        else mo.md("")
+    )
+    _view
+    return sample_size, use_sample
+
+
+@app.cell(hide_code=True)
+def _(corpus, io, sample_size, use_sample):
+    modelled_corpus = corpus
+    if corpus is not None and use_sample.value:
+        modelled_corpus = io.sample_corpus(corpus, int(sample_size.value))
+    return (modelled_corpus,)
+
+
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""## Step 2 — Configure""")
     return
@@ -368,13 +404,13 @@ def _(StopWordConfig, added_words, effective_stopwords, keep_words, language, us
 
 
 @app.cell(hide_code=True)
-def _(active_stopwords, corpus, frequent_terms, mo, pd):
+def _(active_stopwords, frequent_terms, mo, modelled_corpus, pd):
     _count = mo.md(f"**{len(active_stopwords)} stop words** are active.")
-    if corpus is None:
+    if modelled_corpus is None:
         _view = _count
     else:
         _terms = pd.DataFrame(
-            frequent_terms(corpus.documents, active_stopwords, top_n=20),
+            frequent_terms(modelled_corpus.documents, active_stopwords, top_n=20),
             columns=["term", "count"],
         )
         _words = pd.DataFrame({"stop word": sorted(active_stopwords)})
@@ -528,8 +564,8 @@ def _(mo):
 def _(
     FriendlyMessage,
     TopicError,
-    corpus,
     modeling,
+    modelled_corpus,
     pending_config,
     run_button,
     set_failure,
@@ -540,9 +576,9 @@ def _(
     # marimo resets `run_button.value` to False after the dependent cells run, so a change to any
     # setting re-runs this cell without fitting and the previous result survives. A failed fit
     # stores a message and leaves the previous result in place.
-    if run_button.value and corpus is not None:
+    if run_button.value and modelled_corpus is not None:
         try:
-            set_result(modeling.fit_topic_model(corpus, pending_config))
+            set_result(modeling.fit_topic_model(modelled_corpus, pending_config))
             set_overrides({})
             set_failure(None)
         except TopicError as error:

@@ -1,0 +1,60 @@
+name: 🐞 Bug
+description: Report a fault in the app.
+title: '<title>'
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The app runs in your browser. Please do not attach your documents. Describe the shape of
+        the corpus instead, or attach a small file that shows the same fault.
+  - type: textarea
+    attributes:
+      label: What happened
+      description: State what the app did.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What you expected
+      description: State what the app should have done.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Load the demo corpus.
+        2. Select German.
+        3. Set the topic count to 12.
+        4. Select Run model.
+        5. Open the Metadata tab.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Where the app ran
+      description: The published app, or a local export, or `marimo edit`.
+      placeholder: https://maehr.github.io/simple-topic-modeling/
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Browser and version
+      placeholder: Firefox 142 on macOS 15
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: The corpus
+      description: The number of documents, the file format, and the language.
+      placeholder: 400 documents, one CSV file, German, about 300 words each
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: The browser console
+      description: Open the developer tools and copy any red message. This output needs no code block.
+      render: text
+    validations:
+      required: false

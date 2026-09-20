@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+
+      # uv reads the version from .python-version and requires-python.
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint with ruff
+        run: uv run ruff check .
+
+      - name: Check formatting with ruff
+        run: uv run ruff format --check .
+
+      - name: Check types with ty
+        run: uv run ty check
+
+      - name: Run tests with full coverage
+        run: uv run pytest --doctest-modules --cov --cov-fail-under=100
+
+  notebook:
+    name: Notebook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      # MW covers the rules for the WebAssembly target.
+      - name: Check the browser compatibility
+        run: uv run marimo check app.py --select MW
+
+      # `marimo check` does not find a name that two cells both define.
+      # `app.run()` does, because it builds the cell graph.
+      - name: Run the notebook cells
+        run: |
+          uv run python -c "
+          import importlib.util, sys
+          spec = importlib.util.spec_from_file_location('notebook_app', 'app.py')
+          module = importlib.util.module_from_spec(spec); sys.modules['notebook_app'] = module
+          spec.loader.exec_module(module); module.app.run(); print('cells ok')
+          "
+
+  dependency-review:
+    name: Dependency review
+    # Only a pull request has a base to compare against.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Review the dependency changes
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          comment-summary-in-pr: on-failure

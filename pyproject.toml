@@ -1,6 +1,6 @@
 [project]
 name = "browser-topics"
-version = "0.1.0"
+version = "2.0.0"
 description = "Browser Topic Explorer: privacy-friendly topic modelling that runs in the browser."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -19,6 +19,11 @@ dependencies = [
     "scipy>=1.11",
     "wordcloud>=1.9",
 ]
+
+[project.urls]
+Homepage = "https://maehr.github.io/simple-topic-modeling"
+Repository = "https://github.com/maehr/simple-topic-modeling"
+"Bug Tracker" = "https://github.com/maehr/simple-topic-modeling/issues"
 
 [dependency-groups]
 dev = [

@@ -9,7 +9,7 @@
 #     "scikit-learn",
 #     "scipy",
 #     "wordcloud",
-#     "browser-topics @ public/wheels/browser_topics-0.1.0-py3-none-any.whl",
+#     "browser-topics @ public/wheels/browser_topics-2.0.0-py3-none-any.whl",
 # ]
 # ///
 
@@ -32,7 +32,7 @@ async def _():
         import micropip
 
         _wheel = (
-            mo.notebook_location() / "public" / "wheels" / "browser_topics-0.1.0-py3-none-any.whl"
+            mo.notebook_location() / "public" / "wheels" / "browser_topics-2.0.0-py3-none-any.whl"
         )
         await micropip.install(str(_wheel))
 

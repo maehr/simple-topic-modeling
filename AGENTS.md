@@ -218,18 +218,50 @@ Write each commit message as a Conventional Commit. `cliff.toml` maps the commit
 group. Run this command after you commit:
 
 ```bash
-git-cliff --tag v0.1.0 -o CHANGELOG.md
+git-cliff --tag v2.0.0 -o CHANGELOG.md
 ```
 
 Change the tag when you bump the version in `pyproject.toml`.
 
-### Tooling that this repository does not have yet
+### The repository runs on GitHub
 
-The repository has no remote and no second contributor. These parts of sections 2, 3, 5, and 6 wait:
+The remote is `github.com/maehr/simple-topic-modeling`. The published app is
+`https://maehr.github.io/simple-topic-modeling/`.
 
-* GitHub Actions, CodeQL, and `dependency-review-action`.
-* Branch protection and the fork-based pull request flow.
+Three workflows run:
+
+* `ci.yml` runs the section 4 gate in the `Gate` job. The `Notebook` job runs `marimo check` and
+  the `app.run()` check. The `dependency-review` job runs on a pull request only.
+* `pages.yml` builds the wheel, exports the app, and publishes `dist/`. It fails when the wheel
+  file name does not match the project version.
+* `codeql.yml` scans the Python code.
+
+Run the same gate locally before each commit. CI must give no surprise.
+
+This project has one maintainer. Branch protection therefore uses 0 required approvals, no
+code-owner review, and no last-push approval. Any of the last two would deadlock a merge, because
+you cannot approve your own pull request.
+
+These parts of sections 2, 3, 5, and 6 still wait:
+
 * `commitizen` hooks. Write the Conventional Commit message by hand.
-* `CODE_OF_CONDUCT.md`.
+* The fork-based pull request flow. A solo maintainer pushes a branch in this repository.
 
-Add each one when you create the remote. The local gate in section 4 already runs.
+### Version 1 stays where it is
+
+Version 1 was a Streamlit app that ran through stlite. Version 2 replaced it on `main` with an
+unrelated history. The version 1 commits stay at the tag `v1.0.0` and the branch
+`legacy/streamlit`. Never merge that branch into `main`. Never revive its dependencies; the
+pyLDAvis and numpy caps belong to that tree only.
+
+### Bump the version in three places
+
+The wheel file name carries the version, and the browser installs the app from that file. A bump
+that misses one place passes every test and then fails in the browser with
+`ModuleNotFoundError: No module named 'browser_topics'`.
+
+1. `pyproject.toml`, the `version` field.
+2. `app.py`, the PEP 723 block.
+3. `app.py`, the `mo.notebook_location()` path in the first cell.
+
+Then run `uv lock`, rebuild the wheel, and regenerate the changelog with the new tag.

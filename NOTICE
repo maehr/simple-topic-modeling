@@ -8,7 +8,7 @@ version 3 only. See LICENSE for the full text.
 Third-party content
 --------------------------------------------------------------------------
 
-Stop-word lists: src/browser_topics/data/stopwords/{en,de,fr,it,es}.txt
+Stop-word lists: browser_topics/data/stopwords/{en,de,fr,it,es}.txt
 
     Source:  spaCy (https://github.com/explosion/spaCy)
              spacy/lang/<code>/stop_words.py

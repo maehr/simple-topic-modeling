@@ -2,9 +2,28 @@
 
 Browser Topic Explorer finds the themes in a collection of documents. It runs fully in your browser.
 
+[![GitHub issues](https://img.shields.io/github/issues/maehr/simple-topic-modeling.svg)](https://github.com/maehr/simple-topic-modeling/issues)
+[![GitHub forks](https://img.shields.io/github/forks/maehr/simple-topic-modeling.svg)](https://github.com/maehr/simple-topic-modeling/network)
+[![GitHub stars](https://img.shields.io/github/stars/maehr/simple-topic-modeling.svg)](https://github.com/maehr/simple-topic-modeling/stargazers)
+[![GitHub license](https://img.shields.io/github/license/maehr/simple-topic-modeling.svg)](https://github.com/maehr/simple-topic-modeling/blob/main/LICENSE)
+
 The app is a [marimo](https://marimo.io/) notebook. The export runs it with
 [Pyodide](https://pyodide.org/), which is Python compiled to WebAssembly. A static web server is
 enough to host it. No Python server is needed.
+
+## Use it
+
+Open the app at **<https://maehr.github.io/simple-topic-modeling/>**. Nothing to install.
+
+## Version 2 replaces version 1
+
+Version 1 was a Streamlit app that ran through stlite. Version 2 shares no code with it. The app is
+now a marimo notebook, it draws every chart with Altair, and it ships one wheel that `hatchling`
+builds.
+
+Version 1 receives no further work. Its code stays at the tag
+[`v1.0.0`](https://github.com/maehr/simple-topic-modeling/releases/tag/v1.0.0) and the branch
+[`legacy/streamlit`](https://github.com/maehr/simple-topic-modeling/tree/legacy/streamlit).
 
 ## Privacy
 
@@ -186,7 +205,7 @@ Write each commit message as a [Conventional Commit](https://www.conventionalcom
 update the changelog:
 
 ```bash
-git-cliff --tag v0.1.0 -o CHANGELOG.md
+git-cliff --tag v2.0.0 -o CHANGELOG.md
 ```
 
 `AGENTS.md` holds the rules for this repository. Read it before you change the code.
@@ -198,6 +217,9 @@ git-cliff --tag v0.1.0 -o CHANGELOG.md
 | `AGENTS.md` | The rules for an agent or a contributor |
 | `SPECS.md` | The product specification |
 | `CHANGELOG.md` | The record of every notable change |
+| `CONTRIBUTING.md` | How to set up, to check, and to open a pull request |
+| `CODE_OF_CONDUCT.md` | Contributor Covenant 3.0 |
+| `SECURITY.md` | How to report a security issue |
 | `NOTICE` | The origin and the licence of the stop-word lists |
 | `LICENSE` | The full licence text |
 

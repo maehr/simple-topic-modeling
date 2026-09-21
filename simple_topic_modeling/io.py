@@ -338,13 +338,20 @@ def build_corpus(
 def demo_table() -> pd.DataFrame:
     """Read the demo corpus that ships inside the package.
 
+    The corpus holds articles from two Swiss newspapers of 1914. `NOTICE` records the source and
+    the licence. `scripts/build_demo_corpus.py` rebuilds the file.
+
     The app never fetches this file over the network, so it works offline in the browser.
 
     >>> frame = demo_table()
     >>> frame.columns.tolist()
     ['document_id', 'text', 'category', 'date']
-    >>> len(frame) > 40
-    True
+    >>> len(frame)
+    295
+    >>> sorted(frame["category"].unique())[:2]
+    ['Chronique financière', 'Chronique judiciaire']
+    >>> frame["date"].min(), frame["date"].max()
+    ('1914-01-01', '1914-12-31')
     """
     resource = files("simple_topic_modeling") / "data" / "demo_corpus.csv"
     return pd.read_csv(io.StringIO(resource.read_text(encoding="utf-8")))

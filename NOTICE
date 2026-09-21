@@ -8,6 +8,33 @@ version 3 only. See LICENSE for the full text.
 Third-party content
 --------------------------------------------------------------------------
 
+Demo corpus: simple_topic_modeling/data/demo_corpus.csv
+
+    Content: 295 articles from two Swiss newspapers of 1914, the "Journal de
+             Genève" and the "Gazette de Lausanne". The file keeps the first
+             250 words of each article, the publication date, and the section
+             heading that the newspaper printed above it.
+
+    Source:  Le Temps Historical Archive (https://www.letempsarchives.ch/),
+             digitised and published by the Digital Humanities Laboratory of
+             the EPFL for the 2015 Swiss Open Cultural Data Hackathon.
+             Project page: https://hack.glam.opendata.ch/project/234
+             Compiled by: Yannick Rochat and Giovanni Colavizza, EPFL DHLab.
+
+    License: Creative Commons Attribution 4.0 International (CC BY 4.0), as
+             stated by the publishers of the archive.
+
+    Status:  The articles are anonymous newspaper text, published in 1914.
+             Swiss law releases an anonymous work 70 years after publication,
+             so the articles left copyright in 1985. A faithful scan of a
+             public-domain text creates no new right in Switzerland. The CC
+             BY 4.0 grant covers the digitisation, and this notice gives the
+             attribution that the grant asks for.
+
+    Build:   scripts/build_demo_corpus.py rebuilds the file from the archive.
+             It records each source URL and each SHA-256 in
+             scripts/demo_corpus.provenance.json.
+
 Stop-word lists: simple_topic_modeling/data/stopwords/{en,de,fr,it,es}.txt
 
     Source:  spaCy (https://github.com/explosion/spaCy)

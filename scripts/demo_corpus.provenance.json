@@ -1,0 +1,17 @@
+{
+  "source_page": "https://hack.glam.opendata.ch/project/234",
+  "archive_url": "https://www.dropbox.com/scl/fi/7nntp81687zux5xz76oi3/data.zip?rlkey=3i0b7pn49o89nnttfxgom6vh3&dl=1",
+  "archive_sha256": "2a96b01494d9e7b4d814f9a333cf4fe07c39bc35cec3a0d4ad0f392e8b9e6458",
+  "output": "simple_topic_modeling/data/demo_corpus.csv",
+  "output_sha256": "722b918cac89885ea71835e28009356f7b0feb99b5592894a1e0d13325b7eb18",
+  "output_bytes": 410450,
+  "documents": 295,
+  "documents_per_category": {
+    "Chronique financière": 50,
+    "Chronique judiciaire": 45,
+    "Chronique militaire": 50,
+    "Le temps qu'il fait": 50,
+    "Les livres": 50,
+    "Les sports": 50
+  }
+}

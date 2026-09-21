@@ -19,3 +19,6 @@ public/wheels/
 
 # OS
 .DS_Store
+
+# Build script downloads
+.cache/

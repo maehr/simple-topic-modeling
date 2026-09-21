@@ -354,7 +354,7 @@ def _(mo):
 def _(LANGUAGE_LABELS, mo):
     language = mo.ui.dropdown(
         options={label: code for code, label in LANGUAGE_LABELS.items()},
-        value="English",
+        value="French",
         label="Language",
     )
     use_base = mo.ui.checkbox(value=True, label="Use the base stop-word list")
@@ -368,6 +368,9 @@ def _(LANGUAGE_LABELS, mo):
                 """
             Choose the main language of your documents. This mainly changes the common words that
             the app ignores, such as *the*, *und*, *le*, *di*, or *el*.
+
+            The demo corpus is French, so the app starts on French. Change this when you load
+            your own documents.
 
             A mixed-language corpus can turn the base list off and add its own words.
 

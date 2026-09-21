@@ -25,6 +25,36 @@ Version 1 receives no further work. Its code stays at the tag
 [`v1.0.0`](https://github.com/maehr/simple-topic-modeling/releases/tag/v1.0.0) and the branch
 [`legacy/streamlit`](https://github.com/maehr/simple-topic-modeling/tree/legacy/streamlit).
 
+## The demo corpus
+
+The app opens with a demo corpus, so you can see a real result before you load your own documents.
+
+The corpus holds 295 articles from the *Journal de Genève* and the *Gazette de Lausanne* of 1914.
+Each article carries its publication date and the section heading that the newspaper printed above
+it. Six sections give six clear themes: the military chronicle, sport, finance, the weather, book
+reviews, and the courts. A machine read the articles from a scan, so some words carry errors. A
+real archive looks like this.
+
+The Digital Humanities Laboratory of the EPFL digitised the historical archive of
+[*Le Temps*](https://www.letempsarchives.ch/). It published the year 1914 under CC BY 4.0, for the
+2015 [Swiss Open Cultural Data Hackathon](https://hack.glam.opendata.ch/project/234). The articles
+are anonymous newspaper text from 1914, so they left copyright in 1985. [`NOTICE`](NOTICE) holds
+the full statement.
+
+`scripts/build_demo_corpus.py` rebuilds the corpus from the archive. It checks the archive against
+a known hash and records each source URL and each SHA-256 in
+`scripts/demo_corpus.provenance.json`.
+
+## Repeat a run
+
+Every run uses a fixed random seed. The same settings on the same corpus give the same topics.
+
+1. Download `config.json` in Step 4. It records the app version, the language, the stop words, and
+   every model parameter, including the seed.
+2. Download the demo corpus in Step 1, or keep your own corpus.
+3. Send both files to your reader.
+4. The reader loads `config.json` in Step 2. The app restores each setting.
+
 ## Privacy
 
 Your documents stay on your computer. The app sends no text to an analysis server. The app calls no
@@ -39,6 +69,9 @@ model API. The app builds every download in your browser.
 5. Explore the topics in the five tabs.
 6. Rename a topic. The app does not refit the model.
 7. Download the results.
+
+Step 2 shows the model and the number of topics. The other parameters wait in a closed **Advanced
+settings** panel.
 
 The app fits a model only when you select **Run model**. A changed setting does not start a new fit.
 The app keeps the last result until a new fit succeeds.
@@ -171,6 +204,7 @@ Pyodide needs.
 │   ├── stopwords.py        the packaged stop-word lists
 │   └── data/               the stop-word lists and the demo corpus
 ├── public/wheels/          the built wheel, which the export copies
+├── scripts/                the script that builds the demo corpus
 └── tests/
 ```
 
@@ -220,11 +254,23 @@ git-cliff --tag v2.0.0 -o CHANGELOG.md
 | `CONTRIBUTING.md` | How to set up, to check, and to open a pull request |
 | `CODE_OF_CONDUCT.md` | Contributor Covenant 3.0 |
 | `SECURITY.md` | How to report a security issue |
-| `NOTICE` | The origin and the licence of the stop-word lists |
+| `NOTICE` | The origin and the licence of the demo corpus and the stop-word lists |
 | `LICENSE` | The full licence text |
+
+## Author
+
+[Moritz Mähr](https://github.com/maehr) wrote and maintains Simple Topic Modeling.
+
+## Take part
+
+- [Report a problem or ask for a feature](https://github.com/maehr/simple-topic-modeling/issues).
+- Read the [contribution guidelines](CONTRIBUTING.md) before you open a pull request.
+- Read the [code of conduct](CODE_OF_CONDUCT.md).
+- Read [how to report a security issue](SECURITY.md).
 
 ## License
 
 AGPL-3.0-only. See `LICENSE`.
 
-The stop-word lists come from [spaCy](https://spacy.io/) under the MIT licence. See `NOTICE`.
+The stop-word lists come from [spaCy](https://spacy.io/) under the MIT licence. The demo corpus
+comes from the historical archive of *Le Temps*, under CC BY 4.0. See `NOTICE`.

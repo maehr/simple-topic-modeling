@@ -6,9 +6,13 @@ requires. The defaults come from `SPECS.md` sections 3 and 4.
 
 from __future__ import annotations
 
+import json
+from importlib.metadata import PackageNotFoundError, version
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from simple_topic_modeling.errors import ConfigFileError
 
 __all__ = [
     "LANGUAGE_ALIASES",
@@ -20,7 +24,9 @@ __all__ = [
     "NgramChoice",
     "PreprocessConfig",
     "StopWordConfig",
+    "config_from_upload",
     "load_app_config",
+    "package_version",
 ]
 
 Language = Literal["en", "de", "fr", "it", "es"]
@@ -43,6 +49,29 @@ MAX_VOCABULARY_LIMIT = 20_000
 """Largest vocabulary that `SPECS.md` section 4 allows."""
 
 _DEFAULT_MAX_ITER: dict[ModelType, int] = {"nmf": 400, "lda": 20}
+
+DISTRIBUTION = "simple-topic-modeling"
+"""The name of the installed distribution that carries this package."""
+
+UNKNOWN_VERSION = "0.0.0+unknown"
+"""The version to report when the distribution metadata is missing."""
+
+
+def package_version(distribution: str = DISTRIBUTION) -> str:
+    """Return the version of an installed distribution.
+
+    The browser installs the app as a wheel, so the metadata is present there. A source tree that
+    was never installed has no metadata, so the function reports `UNKNOWN_VERSION` instead.
+
+    >>> package_version()[0].isdigit()
+    True
+    >>> package_version("no-such-distribution-8f21c")
+    '0.0.0+unknown'
+    """
+    try:
+        return version(distribution)
+    except PackageNotFoundError:
+        return UNKNOWN_VERSION
 
 
 def normalize_language(value: str) -> Language:
@@ -167,17 +196,22 @@ class ModelConfig(BaseModel):
 class AppConfig(BaseModel):
     """The full configuration that `config.json` stores.
 
+    The version stamp names the app that wrote the file, so a second person can repeat a run with
+    the same build.
+
     >>> AppConfig().language
     'en'
     >>> AppConfig(language="sp").language
     'es'
+    >>> AppConfig().app_version == package_version()
+    True
     >>> AppConfig().summary(2418)
     '2,418 documents · English · NMF · 10 topics · max 5,000 terms'
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    app_version: str = "0.1.0"
+    app_version: str = Field(default_factory=package_version)
     language: Language = "en"
     preprocess: PreprocessConfig = PreprocessConfig()
     stop_words: StopWordConfig = StopWordConfig()
@@ -218,3 +252,45 @@ def load_app_config(payload: dict[str, object]) -> AppConfig:
     """
     known = {key: value for key, value in payload.items() if key in AppConfig.model_fields}
     return AppConfig.model_validate(known)
+
+
+def config_from_upload(payload: bytes) -> AppConfig:
+    """Build an `AppConfig` from the bytes of an uploaded `config.json`.
+
+    The app reads an uploaded file as bytes, so the decoding belongs here and not in the notebook.
+    Every failure carries a recovery action.
+
+    >>> import json
+    >>> data = json.dumps({"language": "fr", "topic_names": ["Sport"]}).encode("utf-8")
+    >>> config_from_upload(data).language
+    'fr'
+    >>> config_from_upload(b'{"language": "fr"')
+    Traceback (most recent call last):
+    simple_topic_modeling.errors.ConfigFileError: The file is not valid JSON. ...
+    >>> config_from_upload(b'[1, 2, 3]')
+    Traceback (most recent call last):
+    simple_topic_modeling.errors.ConfigFileError: The file does not hold a JSON object. ...
+    >>> config_from_upload(bytes.fromhex("fffe"))
+    Traceback (most recent call last):
+    simple_topic_modeling.errors.ConfigFileError: The file is not UTF-8 text. ...
+    >>> config_from_upload(b'{"language": "klingon"}')
+    Traceback (most recent call last):
+    simple_topic_modeling.errors.ConfigFileError: The file holds a setting ...
+
+    Raises:
+        ConfigFileError: when the bytes are not a readable `config.json`.
+    """
+    try:
+        text = payload.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ConfigFileError("The file is not UTF-8 text.") from error
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as error:
+        raise ConfigFileError("The file is not valid JSON.") from error
+    if not isinstance(data, dict):
+        raise ConfigFileError("The file does not hold a JSON object.")
+    try:
+        return load_app_config(data)
+    except ValueError as error:
+        raise ConfigFileError("The file holds a setting that the app cannot use.") from error

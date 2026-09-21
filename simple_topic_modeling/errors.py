@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 __all__ = [
+    "ConfigFileError",
     "DecodeError",
     "EmptyVocabularyError",
     "FriendlyMessage",
@@ -77,6 +78,21 @@ class UnsupportedFileError(TopicError):
                 f'The file "{filename}" is not readable text.',
                 "Upload CSV, TSV, JSON, JSONL, or a plain-text file such as TXT or Markdown.",
             )
+        )
+
+
+class ConfigFileError(TopicError):
+    """The uploaded settings file is not usable.
+
+    >>> ConfigFileError("The file is not valid JSON.").friendly.detail
+    'The file is not valid JSON.'
+    >>> ConfigFileError("The file is not valid JSON.").friendly.recovery
+    'Upload the config.json that this app wrote in Step 4.'
+    """
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(
+            FriendlyMessage(detail, "Upload the config.json that this app wrote in Step 4.")
         )
 
 

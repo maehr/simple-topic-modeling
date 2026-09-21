@@ -202,15 +202,43 @@ value to compare it against the submitted value.
 
 ### The demo corpus ships inside the wheel
 
-`SPECS.md` section 9 puts the demo corpus in `assets/`. That path needs a network fetch, which is
-fragile in Pyodide. Keep the file at `simple_topic_modeling/data/demo_corpus.csv` instead. `importlib.resources`
-reads it, exactly as it reads the stop-word lists.
+Keep the file at `simple_topic_modeling/data/demo_corpus.csv`. `importlib.resources` reads it,
+exactly as it reads the stop-word lists. A path under `assets/` would need a network fetch, which
+is fragile in Pyodide.
+
+### A demo corpus needs a provenance script
+
+Never commit corpus bytes by hand. A demo corpus needs `scripts/build_demo_corpus.py`, which
+rebuilds the file from its source.
+
+The script must do all of the following:
+
+* Name each source URL as a constant.
+* Check the download against a pinned SHA-256, and stop on a mismatch.
+* Write the same bytes on every run. Sort the output and fix each selection rule.
+* Write the source URLs, the archive hash, and the output hash to
+  `scripts/demo_corpus.provenance.json`.
+
+Verify the licence before the bytes reach git. History is hard to clean afterwards. Record the
+source, the holder, the licence, and the copyright status in `NOTICE`.
+
+The current corpus is CC BY 4.0, not public domain. The 1914 articles are anonymous newspaper
+text, so they left copyright in 1985. `NOTICE` holds the reasoning.
 
 ### The type checker cannot follow Altair
 
 Altair builds each `mark_*` method at runtime, so `ty` cannot infer that the method returns a chart.
 `pyproject.toml` turns `unresolved-attribute` off for `simple_topic_modeling/plots.py` only. Keep the rule
 on for every other file.
+
+### Read the version from the package metadata
+
+`AppConfig.app_version` uses `package_version()`, which reads the installed distribution metadata.
+Never write the version as a literal in `config.py`. A literal goes stale, and a `config.json`
+then reports the wrong build.
+
+`package_version()` takes the distribution name as an argument, so a test can reach the fallback
+branch without a pragma.
 
 ### Write the changelog with git-cliff
 
@@ -263,5 +291,8 @@ that misses one place passes every test and then fails in the browser with
 1. `pyproject.toml`, the `version` field.
 2. `app.py`, the PEP 723 block.
 3. `app.py`, the `mo.notebook_location()` path in the first cell.
+
+`config.py` and `__init__.py` read the version from the package metadata, so neither needs a
+change.
 
 Then run `uv lock`, rebuild the wheel, and regenerate the changelog with the new tag.

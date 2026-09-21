@@ -190,6 +190,30 @@ def _(mo, source):
 
 
 @app.cell(hide_code=True)
+def _(exports, io, mo, source):
+    # The demo corpus is the one file a reader needs to repeat a demo run. It ships inside the
+    # wheel, so the download reads it from the package and never from the network.
+    if source.value == "Demo data":
+        _demo = mo.vstack(
+            [
+                mo.download(
+                    data=exports.to_csv_bytes(io.demo_table()),
+                    filename="demo_corpus.csv",
+                    label="Download the demo corpus",
+                ),
+                mo.md(
+                    "*295 articles from the* Journal de Genève *and the* Gazette de Lausanne *of"
+                    " 1914. See `NOTICE` for the source and the licence.*"
+                ),
+            ]
+        )
+    else:
+        _demo = mo.md("")
+    _demo
+    return
+
+
+@app.cell(hide_code=True)
 def _(TopicError, file_input, io, paste_input, source):
     table = None
     text_documents = None
@@ -394,17 +418,87 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(LANGUAGE_LABELS, mo):
+def _(TopicError, config_from_upload, mo, set_loaded):
+    def _apply(value):
+        # marimo calls this when a file arrives, and again with an empty value on a reset.
+        if not value:
+            return
+        _file = value[0]
+        try:
+            set_loaded((config_from_upload(_file.contents), _file.name, None))
+        except TopicError as error:
+            set_loaded((None, _file.name, error.friendly))
+
+    config_upload = mo.ui.file(
+        filetypes=[".json"],
+        multiple=False,
+        label="Load settings from a config.json",
+        on_change=_apply,
+    )
+    return (config_upload,)
+
+
+@app.cell(hide_code=True)
+def _(config_upload, get_loaded, mo):
+    _loaded = get_loaded()
+    if _loaded is None:
+        _status = mo.md("")
+    elif _loaded[2] is not None:
+        _status = mo.callout(mo.md(f"**{_loaded[2].detail}** {_loaded[2].recovery}"), kind="warn")
+    else:
+        _status = mo.md(
+            f"*Loaded the settings from `{_loaded[1]}`, written by version"
+            f" {_loaded[0].app_version}. Select **Reset recommended defaults** to discard them.*"
+        )
+    mo.vstack(
+        [
+            config_upload,
+            _status,
+            mo.accordion(
+                {
+                    "Repeat a run exactly": mo.md(
+                        """
+                    Every run uses a fixed random seed, so the same settings on the same corpus
+                    give the same topics.
+
+                    Download `config.json` in Step 4. Send it with your corpus. The reader loads
+                    the file here, and the app restores each setting.
+                    """
+                    )
+                }
+            ),
+        ]
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(LANGUAGE_LABELS, get_loaded, get_reset, mo):
+    get_reset()
+    _loaded = get_loaded()
+    _config = _loaded[0] if _loaded is not None else None
+    _stop = _config.stop_words if _config is not None else None
     language = mo.ui.dropdown(
         options={label: code for code, label in LANGUAGE_LABELS.items()},
-        value="French",
+        value=LANGUAGE_LABELS[_config.language] if _config is not None else "French",
         label="Language",
     )
-    use_base = mo.ui.checkbox(value=True, label="Use the base stop-word list")
-    added_words = mo.ui.text_area(
-        label="Add stop words", placeholder="survey, january, ltd", rows=3
+    use_base = mo.ui.checkbox(
+        value=_stop.use_base_list if _stop is not None else True,
+        label="Use the base stop-word list",
     )
-    keep_words = mo.ui.text_area(label="Always keep these words", placeholder="growth", rows=3)
+    added_words = mo.ui.text_area(
+        label="Add stop words",
+        value=_stop.added if _stop is not None else "",
+        placeholder="survey, january, ltd",
+        rows=3,
+    )
+    keep_words = mo.ui.text_area(
+        label="Always keep these words",
+        value=_stop.always_keep if _stop is not None else "",
+        placeholder="growth",
+        rows=3,
+    )
     _help = mo.accordion(
         {
             "About the language setting": mo.md(
@@ -481,15 +575,22 @@ def _(active_stopwords, frequent_terms, mo, modelled_corpus, pd):
 @app.cell(hide_code=True)
 def _(mo):
     get_reset, set_reset = mo.state(0)
-    return get_reset, set_reset
+    # Holds (config, file name, failure) for a loaded config.json, or None. The reset button
+    # clears it, so a reset always restores the recommended defaults.
+    get_loaded, set_loaded = mo.state(None)
+    return get_loaded, get_reset, set_loaded, set_reset
 
 
 @app.cell(hide_code=True)
-def _(get_reset, mo, set_reset, source):
+def _(get_loaded, get_reset, mo, set_loaded, set_reset, source):
     get_reset()
+    _loaded = get_loaded()
+    _model = _loaded[0].model if _loaded is not None and _loaded[0] is not None else None
+    _model_labels = {"nmf": "NMF (recommended)", "lda": "LDA"}
+    _ngram_labels = {"1": "Single words", "1-2": "Words and pairs", "2": "Pairs only"}
     model_type = mo.ui.dropdown(
         options={"NMF (recommended)": "nmf", "LDA": "lda"},
-        value="NMF (recommended)",
+        value=_model_labels[_model.model_type] if _model is not None else "NMF (recommended)",
         label="Model",
     )
     # The demo corpus carries six newspaper sections. Six topics therefore give a first result
@@ -497,27 +598,71 @@ def _(get_reset, mo, set_reset, source):
     # articles into several topics of bare numbers.
     _start_topics = 6 if source.value == "Demo data" else 10
     n_topics = mo.ui.slider(
-        2, 30, value=_start_topics, step=1, label="Number of topics", show_value=True
+        2,
+        30,
+        value=_model.n_topics if _model is not None else _start_topics,
+        step=1,
+        label="Number of topics",
+        show_value=True,
     )
-    max_features = mo.ui.number(100, 20000, value=5000, step=100, label="Max vocabulary")
-    min_df = mo.ui.number(1, 100, value=2, step=1, label="Minimum document frequency")
+    max_features = mo.ui.number(
+        100,
+        20000,
+        value=_model.max_features if _model is not None else 5000,
+        step=100,
+        label="Max vocabulary",
+    )
+    min_df = mo.ui.number(
+        1,
+        100,
+        value=_model.min_df if _model is not None else 2,
+        step=1,
+        label="Minimum document frequency",
+    )
     max_df = mo.ui.slider(
-        0.5, 1.0, value=0.95, step=0.01, label="Maximum document frequency", show_value=True
+        0.5,
+        1.0,
+        value=_model.max_df if _model is not None else 0.95,
+        step=0.01,
+        label="Maximum document frequency",
+        show_value=True,
     )
     ngrams = mo.ui.dropdown(
         options={"Single words": "1", "Words and pairs": "1-2", "Pairs only": "2"},
-        value="Single words",
+        value=_ngram_labels[_model.ngrams] if _model is not None else "Single words",
         label="N-grams",
     )
-    reset_button = mo.ui.button(
-        label="Reset recommended defaults",
-        on_change=lambda _value: set_reset(lambda current: current + 1),
+    # The seed is what makes a run repeatable. It already reached both models; it was only
+    # invisible. A reader who has the corpus and the seed gets the same topics.
+    random_seed = mo.ui.number(
+        0,
+        2**31 - 1,
+        value=_model.random_seed if _model is not None else 42,
+        step=1,
+        label="Random seed",
     )
-    return max_df, max_features, min_df, model_type, n_topics, ngrams, reset_button
+
+    def _reset(_value):
+        set_loaded(None)
+        set_reset(lambda current: current + 1)
+
+    reset_button = mo.ui.button(label="Reset recommended defaults", on_change=_reset)
+    return max_df, max_features, min_df, model_type, n_topics, ngrams, random_seed, reset_button
 
 
 @app.cell(hide_code=True)
-def _(max_df, max_features, min_df, mo, model_type, n_topics, ngrams, reset_button, source):
+def _(
+    max_df,
+    max_features,
+    min_df,
+    mo,
+    model_type,
+    n_topics,
+    ngrams,
+    random_seed,
+    reset_button,
+    source,
+):
     _model_help = mo.accordion(
         {
             "When to use NMF or LDA": mo.md(
@@ -545,7 +690,7 @@ def _(max_df, max_features, min_df, mo, model_type, n_topics, ngrams, reset_butt
             "Advanced settings": mo.vstack(
                 [
                     mo.hstack(
-                        [max_features, min_df, max_df, ngrams],
+                        [max_features, min_df, max_df, ngrams, random_seed],
                         justify="start",
                         gap=2,
                         wrap=True,
@@ -569,6 +714,10 @@ def _(max_df, max_features, min_df, mo, model_type, n_topics, ngrams, reset_butt
 
                     **N-grams.** Single words, or also two-word phrases such as *climate change*.
                     Phrases can improve a label, but they make the vocabulary larger and slower.
+
+                    **Random seed.** The number that fixes the starting point of the model. The
+                    same seed on the same corpus and the same settings gives the same topics.
+                    Change it to see how stable your topics are.
                     """
                     ),
                 ]
@@ -598,6 +747,7 @@ def _(
     model_type,
     n_topics,
     ngrams,
+    random_seed,
     stop_word_config,
 ):
     pending_config = AppConfig(
@@ -611,6 +761,7 @@ def _(
             min_df=int(min_df.value),
             max_df=float(max_df.value),
             ngrams=ngrams.value,
+            random_seed=int(random_seed.value),
         ),
     )
     return (pending_config,)
@@ -1005,6 +1156,36 @@ def _(display_result, exports, include_text, mo, pending_config):
         )
         _view = mo.hstack(_buttons, justify="start", gap=1, wrap=True)
     _view
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        """
+    ---
+
+    ### About
+
+    **The tool.** [Moritz Mähr](https://github.com/maehr) wrote Simple Topic Modeling. It is free
+    software under the
+    [AGPL-3.0](https://github.com/maehr/simple-topic-modeling/blob/main/LICENSE).
+
+    **The demo corpus.** The corpus holds 295 articles from the *Journal de Genève* and the
+    *Gazette de Lausanne* of 1914. The Digital Humanities Laboratory of the EPFL digitised the
+    historical archive of *Le Temps*. It published the year 1914 under CC BY 4.0, for the 2015
+    Swiss Open Cultural Data Hackathon. The articles are anonymous newspaper text from 1914, so
+    they left copyright in 1985. The
+    [project page](https://hack.glam.opendata.ch/project/234) holds the archive, and
+    [`NOTICE`](https://github.com/maehr/simple-topic-modeling/blob/main/NOTICE) holds the full
+    statement.
+
+    **Take part.** [Report a problem or ask for a
+    feature](https://github.com/maehr/simple-topic-modeling/issues). Read the [contribution
+    guidelines](https://github.com/maehr/simple-topic-modeling/blob/main/CONTRIBUTING.md). Read
+    the [source](https://github.com/maehr/simple-topic-modeling).
+    """
+    )
     return
 
 

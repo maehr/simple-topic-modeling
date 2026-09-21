@@ -26,9 +26,37 @@ The app should feel like a focused web tool rather than a notebook. Code is hidd
 
 ## 2. User flow
 
+### Onboarding
+
+The app opens for a reader who has never fitted a topic model. The first screen must answer four
+questions before any control appears: what the app finds, what the reader gets, how long a run
+takes, and what to do first.
+
+Requirements:
+
+- Show an intro above Step 1. Name the app. State what it finds. State what the reader gets. State
+  the length of a run.
+- Show a bold line that says that a demo corpus is loaded. Point it at **Run model** in Step 3.
+- Keep the privacy callout under the intro.
+- Show two closed accordions. **How to use this tool** holds the four steps and describes the demo
+  corpus. **What is a topic model?** explains a topic, a term, and a score without jargon.
+- Show an orientation line above the result tabs. Name what each tab holds. Name the next action.
+- Show a **Glossary** accordion under the result tabs. Define topic, term, prevalence, dominant
+  score, topic diversity, document frequency, n-gram, and TF-IDF.
+- Point each empty state at the control that fills it.
+- Show an **About** section at the end. Name the author. Describe and link the demo corpus. Link
+  the repository, the issue tracker, and the contribution guidelines.
+
 ### Step 1 — Add data
 
 Support drag-and-drop, file picker, paste, and demo data.
+
+The demo corpus holds 295 articles from the *Journal de Genève* and the *Gazette de Lausanne* of
+1914, with a `date` column and a `category` column. The EPFL Digital Humanities Laboratory
+published the archive under CC BY 4.0 for the 2015 Swiss Open Cultural Data Hackathon. The corpus
+ships inside the wheel at `simple_topic_modeling/data/demo_corpus.csv`, so the app reads it without
+a network fetch. `scripts/build_demo_corpus.py` rebuilds it and records the provenance. `NOTICE`
+holds the source and the licence.
 
 #### Accepted files
 
@@ -487,6 +515,24 @@ Create the ZIP locally with Python's standard `zipfile` module.
 
 Optionally expose Vega-Lite chart specs as JSON. PNG/SVG chart download is nice-to-have, not an MVP blocker.
 
+### Reproducibility
+
+A reader must be able to repeat a run exactly. Two files carry everything that a run needs: the
+corpus and `config.json`.
+
+Requirements:
+
+- Fix the random seed. Store it in `config.json`. Show it in the advanced settings, so a reader can
+  change it and see how stable the topics are.
+- Stamp `app_version` from the installed package metadata, never from a literal. A file from
+  version 2 must report version 2.
+- Offer a download of the demo corpus while the demo is the active source.
+- Accept a `config.json` upload. Restore the language, the stop words, and every model parameter.
+  Name the loaded file and the version that wrote it.
+- Report a bad file with a recovery action. Keep the parsing in the package, never in the notebook,
+  so the tests can cover it.
+- Let **Reset recommended defaults** discard a loaded configuration.
+
 ---
 
 ## 8. Browser performance and errors
@@ -547,13 +593,14 @@ Suggested layout:
 │   ├── plots.py
 │   ├── exports.py
 │   ├── stopwords.py
-│   └── data/stopwords/
-│       ├── en.txt
-│       ├── de.txt
-│       ├── fr.txt
-│       ├── it.txt
-│       └── es.txt
-├── assets/demo_corpus.csv
+│   └── data/
+│       ├── demo_corpus.csv
+│       └── stopwords/
+│           ├── en.txt
+│           ├── de.txt
+│           ├── fr.txt
+│           ├── it.txt
+│           └── es.txt
 └── tests/
 ```
 

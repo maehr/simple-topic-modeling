@@ -5,7 +5,7 @@
 header = """
 # Changelog
 
-This file records every notable change to Browser Topic Explorer.
+This file records every notable change to Simple Topic Modeling.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

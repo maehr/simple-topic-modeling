@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from browser_topics.config import (
+from simple_topic_modeling.config import (
     LANGUAGE_LABELS,
     AppConfig,
     ModelConfig,

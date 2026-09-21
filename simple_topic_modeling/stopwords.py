@@ -9,8 +9,8 @@ import re
 from functools import lru_cache
 from importlib.resources import files
 
-from browser_topics.config import Language, StopWordConfig
-from browser_topics.preprocess import token_pattern
+from simple_topic_modeling.config import Language, StopWordConfig
+from simple_topic_modeling.preprocess import token_pattern
 
 __all__ = [
     "base_stopwords",
@@ -36,7 +36,7 @@ def base_stopwords(language: Language) -> frozenset[str]:
     >>> all(word == word.lower() for word in base_stopwords("fr"))
     True
     """
-    resource = files("browser_topics") / "data" / "stopwords" / f"{language}.txt"
+    resource = files("simple_topic_modeling") / "data" / "stopwords" / f"{language}.txt"
     text = resource.read_text(encoding="utf-8")
     return frozenset(line.strip() for line in text.splitlines() if line.strip())
 

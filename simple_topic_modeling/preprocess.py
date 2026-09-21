@@ -12,7 +12,7 @@ from collections.abc import Sequence
 
 from sklearn.feature_extraction.text import CountVectorizer
 
-from browser_topics.config import PreprocessConfig
+from simple_topic_modeling.config import PreprocessConfig
 
 __all__ = ["clean_text", "clean_texts", "frequent_terms", "token_pattern"]
 
@@ -77,7 +77,7 @@ def clean_texts(texts: Sequence[str], config: PreprocessConfig) -> list[str]:
 
 def _expand(stop_words: frozenset[str], min_token_length: int) -> list[str] | None:
     """Expand the stop words to match the tokenizer. See `stopwords.vectorizer_stopwords`."""
-    from browser_topics.stopwords import vectorizer_stopwords
+    from simple_topic_modeling.stopwords import vectorizer_stopwords
 
     return vectorizer_stopwords(stop_words, min_token_length)
 

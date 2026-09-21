@@ -1,7 +1,7 @@
 import pytest
 
-from browser_topics.config import AppConfig, ModelConfig
-from browser_topics.io import build_corpus
+from simple_topic_modeling.config import AppConfig, ModelConfig
+from simple_topic_modeling.io import build_corpus
 
 ANIMAL_TEXTS = [
     "cat dog runs fast across the field",

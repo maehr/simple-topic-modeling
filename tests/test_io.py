@@ -1,8 +1,8 @@
 import pandas as pd
 import pytest
 
-from browser_topics.errors import DecodeError, NoUsableTextError, UnsupportedFileError
-from browser_topics.io import (
+from simple_topic_modeling.errors import DecodeError, NoUsableTextError, UnsupportedFileError
+from simple_topic_modeling.io import (
     UploadedFile,
     build_corpus,
     corpus_stats,
@@ -138,13 +138,13 @@ def test_build_corpus_rejects_a_corpus_with_no_usable_text():
 
 
 def test_a_comfortable_corpus_gets_no_warning():
-    from browser_topics.io import corpus_size_warning
+    from simple_topic_modeling.io import corpus_size_warning
 
     assert corpus_size_warning(["a short document"] * 100) is None
 
 
 def test_a_large_document_count_warns():
-    from browser_topics.io import LARGE_DOCUMENT_COUNT, corpus_size_warning
+    from simple_topic_modeling.io import LARGE_DOCUMENT_COUNT, corpus_size_warning
 
     warning = corpus_size_warning(["x"] * (LARGE_DOCUMENT_COUNT + 1))
     assert warning is not None
@@ -153,7 +153,7 @@ def test_a_large_document_count_warns():
 
 
 def test_a_large_text_volume_warns_even_with_few_documents():
-    from browser_topics.io import LARGE_TEXT_BYTES, corpus_size_warning
+    from simple_topic_modeling.io import LARGE_TEXT_BYTES, corpus_size_warning
 
     warning = corpus_size_warning(["x" * (LARGE_TEXT_BYTES + 1)])
     assert warning is not None
@@ -161,7 +161,7 @@ def test_a_large_text_volume_warns_even_with_few_documents():
 
 
 def test_sampling_is_reproducible_and_ordered():
-    from browser_topics.io import sample_corpus
+    from simple_topic_modeling.io import sample_corpus
 
     corpus, _ = build_corpus([f"doc {i}" for i in range(50)], [str(i) for i in range(50)])
     first = sample_corpus(corpus, 10)
@@ -171,7 +171,7 @@ def test_sampling_is_reproducible_and_ordered():
 
 
 def test_sampling_keeps_metadata_aligned():
-    from browser_topics.io import sample_corpus
+    from simple_topic_modeling.io import sample_corpus
 
     metadata = pd.DataFrame({"group": [f"g{i}" for i in range(20)]})
     corpus, _ = build_corpus([f"doc {i}" for i in range(20)], [str(i) for i in range(20)], metadata)
@@ -180,7 +180,7 @@ def test_sampling_keeps_metadata_aligned():
 
 
 def test_a_sample_larger_than_the_corpus_changes_nothing():
-    from browser_topics.io import sample_corpus
+    from simple_topic_modeling.io import sample_corpus
 
     corpus, _ = build_corpus(["a", "b"], ["1", "2"])
     assert sample_corpus(corpus, 10) is corpus

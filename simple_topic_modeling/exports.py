@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pandas as pd
 
-from browser_topics.metrics import topic_similarity
+from simple_topic_modeling.metrics import topic_similarity
 
 if TYPE_CHECKING:
-    from browser_topics.config import AppConfig
-    from browser_topics.result import TopicModelResult
+    from simple_topic_modeling.config import AppConfig
+    from simple_topic_modeling.result import TopicModelResult
 
 __all__ = [
     "ZIP_README",
@@ -34,7 +34,7 @@ __all__ = [
 TOP_TERM_COUNT = 10
 """Terms per topic in `topics.csv` and `topic_terms.csv`."""
 
-ZIP_README = """Browser Topic Explorer export
+ZIP_README = """Simple Topic Modeling export
 
 documents_topics.csv   one row per modelled document, with its topic shares
 topics.csv             one row per topic, with its name, prevalence and top terms
@@ -59,7 +59,7 @@ def to_csv_bytes(frame: pd.DataFrame) -> bytes:
 def documents_topics_frame(result: TopicModelResult, include_text: bool = False) -> pd.DataFrame:
     """Build `documents_topics.csv` with the columns of `SPECS.md` section 7.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> frame = documents_topics_frame(_example_result())
     >>> frame.columns.tolist()[:3]
     ['document_id', 'dominant_topic_id', 'dominant_topic_name']
@@ -88,7 +88,7 @@ def documents_topics_frame(result: TopicModelResult, include_text: bool = False)
 def topics_frame(result: TopicModelResult, top_n: int = TOP_TERM_COUNT) -> pd.DataFrame:
     """Build `topics.csv` with the columns of `SPECS.md` section 7.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> frame = topics_frame(_example_result(), top_n=2)
     >>> frame.columns.tolist()
     ['topic_id', 'topic_name', 'topic_auto_label', 'prevalence', 'x', 'y', 'top_terms']
@@ -112,7 +112,7 @@ def topics_frame(result: TopicModelResult, top_n: int = TOP_TERM_COUNT) -> pd.Da
 def topic_terms_frame(result: TopicModelResult, top_n: int = TOP_TERM_COUNT) -> pd.DataFrame:
     """Build the long-format `topic_terms.csv` of `SPECS.md` section 7.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> frame = topic_terms_frame(_example_result(), top_n=2)
     >>> frame.columns.tolist()
     ['topic_id', 'topic_name', 'rank', 'term', 'weight_raw', 'weight_normalized']
@@ -142,7 +142,7 @@ def topic_terms_frame(result: TopicModelResult, top_n: int = TOP_TERM_COUNT) -> 
 def topic_similarity_frame(result: TopicModelResult) -> pd.DataFrame:
     """Build `topic_similarity.csv` with one row per distinct topic pair.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> frame = topic_similarity_frame(_example_result())
     >>> frame.columns.tolist()
     ['topic_a_id', 'topic_a_name', 'topic_b_id', 'topic_b_name', 'cosine_similarity']
@@ -167,7 +167,7 @@ def config_json(config: AppConfig, topic_names: list[str] | None = None) -> byte
 
     The language always leaves as `es`, never as the accepted alias `sp`.
 
-    >>> from browser_topics.config import AppConfig
+    >>> from simple_topic_modeling.config import AppConfig
     >>> import json
     >>> payload = json.loads(config_json(AppConfig(language="sp")))
     >>> payload["language"]
@@ -189,8 +189,8 @@ def project_zip(result: TopicModelResult, config: AppConfig, include_text: bool 
     `zipfile` module.
 
     >>> import zipfile, io
-    >>> from browser_topics.config import AppConfig
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.config import AppConfig
+    >>> from simple_topic_modeling.result import _example_result
     >>> data = project_zip(_example_result(), AppConfig())
     >>> zipfile.ZipFile(io.BytesIO(data)).namelist()
     ['documents_topics.csv', 'topics.csv', 'topic_terms.csv',

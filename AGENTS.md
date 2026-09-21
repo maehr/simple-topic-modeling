@@ -107,17 +107,17 @@ These rules apply only to Python that runs in a browser. A server target has no 
 * Do not use an OS socket, a subprocess, or a thread. Do not run FastAPI in a browser.
 * Use `pyodide.http.pyfetch` or `pyxhr` for HTTP. Use HTTPX2 only with a tested custom transport.
 
-## 8. Project notes — Browser Topic Explorer
+## 8. Project notes — Simple Topic Modeling
 
 These rules come from measured behaviour of `marimo` 0.24.2. Do not change them without a new test.
 
 ### Package layout
 
-Keep `browser_topics/` at the repository root. Do not use a `src/` layout.
+Keep `simple_topic_modeling/` at the repository root. Do not use a `src/` layout.
 
 `marimo export html-wasm` builds a wheel from each local module that the notebook imports. It resolves
 the module name against the notebook directory first. A `src/` layout therefore produces a wheel named
-`src`, which the browser cannot import as `browser_topics`. The marimo setting `runtime.pythonpath` does
+`src`, which the browser cannot import as `simple_topic_modeling`. The marimo setting `runtime.pythonpath` does
 not change this order.
 
 ### Build the wheel before each export
@@ -132,7 +132,7 @@ uv build --wheel -o public/wheels
 `app.py` names that wheel in its PEP 723 block:
 
 ```text
-browser-topics @ public/wheels/browser_topics-0.1.0-py3-none-any.whl
+simple-topic-modeling @ public/wheels/simple_topic_modeling-0.1.0-py3-none-any.whl
 ```
 
 The export rewrites the path to `../public/wheels/...` and copies `public/` into `dist/`. marimo skips
@@ -147,7 +147,7 @@ The wheel file name carries the version. Update the path in `app.py` when you bu
 
 Pyodide ships its own build of every runtime package. micropip refuses to reinstall one, so a lower
 bound above the shipped version stops the whole install. The app then fails with
-`ModuleNotFoundError: No module named 'browser_topics'`.
+`ModuleNotFoundError: No module named 'simple_topic_modeling'`.
 
 Write each bound as the oldest API the code uses. Never raise a bound to the newest release. The
 Pyodide version that marimo pins lags the Pyodide documentation.
@@ -203,13 +203,13 @@ value to compare it against the submitted value.
 ### The demo corpus ships inside the wheel
 
 `SPECS.md` section 9 puts the demo corpus in `assets/`. That path needs a network fetch, which is
-fragile in Pyodide. Keep the file at `browser_topics/data/demo_corpus.csv` instead. `importlib.resources`
+fragile in Pyodide. Keep the file at `simple_topic_modeling/data/demo_corpus.csv` instead. `importlib.resources`
 reads it, exactly as it reads the stop-word lists.
 
 ### The type checker cannot follow Altair
 
 Altair builds each `mark_*` method at runtime, so `ty` cannot infer that the method returns a chart.
-`pyproject.toml` turns `unresolved-attribute` off for `browser_topics/plots.py` only. Keep the rule
+`pyproject.toml` turns `unresolved-attribute` off for `simple_topic_modeling/plots.py` only. Keep the rule
 on for every other file.
 
 ### Write the changelog with git-cliff
@@ -258,7 +258,7 @@ pyLDAvis and numpy caps belong to that tree only.
 
 The wheel file name carries the version, and the browser installs the app from that file. A bump
 that misses one place passes every test and then fails in the browser with
-`ModuleNotFoundError: No module named 'browser_topics'`.
+`ModuleNotFoundError: No module named 'simple_topic_modeling'`.
 
 1. `pyproject.toml`, the `version` field.
 2. `app.py`, the PEP 723 block.

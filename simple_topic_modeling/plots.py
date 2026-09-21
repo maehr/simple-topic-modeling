@@ -13,10 +13,10 @@ import altair as alt
 import numpy as np
 import pandas as pd
 
-from browser_topics.metrics import topic_similarity
+from simple_topic_modeling.metrics import topic_similarity
 
 if TYPE_CHECKING:
-    from browser_topics.result import TopicModelResult
+    from simple_topic_modeling.result import TopicModelResult
 
 __all__ = [
     "SNIPPET_LENGTH",
@@ -69,7 +69,7 @@ def snippet(text: str, length: int = SNIPPET_LENGTH) -> str:
 def topic_cards(result: TopicModelResult, term_count: int = 5) -> pd.DataFrame:
     """Build the topic cards of `SPECS.md` section 6.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> cards = topic_cards(_example_result(), term_count=2)
     >>> cards.columns.tolist()
     ['topic_id', 'topic', 'top_terms', 'prevalence', 'documents']
@@ -94,7 +94,7 @@ def topic_cards(result: TopicModelResult, term_count: int = 5) -> pd.DataFrame:
 def top_term_frame(result: TopicModelResult, topic: int, term_count: int = 15) -> pd.DataFrame:
     """Build the bar-chart data for one topic, strongest term first.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> frame = top_term_frame(_example_result(), 0, term_count=2)
     >>> frame["term"].tolist()
     ['alpha', 'beta']
@@ -114,7 +114,7 @@ def top_term_frame(result: TopicModelResult, topic: int, term_count: int = 15) -
 def representative_documents(result: TopicModelResult, topic: int, count: int = 10) -> pd.DataFrame:
     """Rank the documents of one topic by their score, as `SPECS.md` section 6 requires.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> frame = representative_documents(_example_result(), 0, count=2)
     >>> frame.columns.tolist()[:3]
     ['document_id', 'score', 'snippet']
@@ -141,7 +141,7 @@ def _blank_axis() -> alt.Axis:
 def topic_map_frame(result: TopicModelResult, term_count: int = 5) -> pd.DataFrame:
     """Build the bubble data for the topic map.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> frame = topic_map_frame(_example_result(), term_count=2)
     >>> frame.columns.tolist()
     ['topic_id', 'topic', 'x', 'y', 'prevalence', 'top_terms']
@@ -164,7 +164,7 @@ def topic_map_frame(result: TopicModelResult, term_count: int = 5) -> pd.DataFra
 def topic_map(result: TopicModelResult) -> alt.Chart:
     """Place each topic on the 2-D map. Bubble size is the prevalence.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> topic_map(_example_result()).to_dict()["mark"]["type"]
     'circle'
     """
@@ -190,7 +190,7 @@ def topic_map(result: TopicModelResult) -> alt.Chart:
 def prevalence_bars(result: TopicModelResult) -> alt.Chart:
     """Rank the topics by how much of the corpus they cover.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> prevalence_bars(_example_result()).to_dict()["mark"]["type"]
     'bar'
     """
@@ -214,7 +214,7 @@ def prevalence_bars(result: TopicModelResult) -> alt.Chart:
 def top_term_bars(result: TopicModelResult, topic: int, term_count: int = 15) -> alt.Chart:
     """Draw the top terms of one topic as horizontal bars.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> top_term_bars(_example_result(), 0).to_dict()["mark"]["type"]
     'bar'
     """
@@ -234,7 +234,7 @@ def top_term_bars(result: TopicModelResult, topic: int, term_count: int = 15) ->
 def similarity_long_frame(result: TopicModelResult) -> pd.DataFrame:
     """Build the full similarity matrix in long form, for the heatmap.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> frame = similarity_long_frame(_example_result())
     >>> len(frame)
     4
@@ -258,7 +258,7 @@ def similarity_long_frame(result: TopicModelResult) -> pd.DataFrame:
 def similarity_heatmap(result: TopicModelResult) -> alt.Chart:
     """Show the cosine similarity between every pair of topics.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> similarity_heatmap(_example_result()).to_dict()["mark"]["type"]
     'rect'
     """
@@ -287,7 +287,7 @@ def similarity_heatmap(result: TopicModelResult) -> alt.Chart:
 def document_frame(result: TopicModelResult) -> pd.DataFrame:
     """Build one row per document for the scatter plot and the linked table.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> frame = document_frame(_example_result())
     >>> frame.columns.tolist()[:5]
     ['document_id', 'topic', 'score', 'snippet', 'x']
@@ -313,7 +313,7 @@ def document_scatter(frame: pd.DataFrame, sample_limit: int = 4000) -> alt.Chart
     Above `sample_limit` rows the chart draws a reproducible sample. `SPECS.md` section 8 allows
     this, because sampling changes the picture only, never the model.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> document_scatter(document_frame(_example_result())).to_dict()["mark"]["type"]
     'circle'
     >>> import pandas as pd
@@ -347,7 +347,7 @@ def word_cloud_png(result: TopicModelResult, topic: int, term_count: int = 60) -
 
     The seed is fixed, so the same topic always gives the same picture.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> word_cloud_png(_example_result(), 0)[:4]
     b'\x89PNG'
     """
@@ -376,7 +376,7 @@ def group_share_frame(result: TopicModelResult, column: str) -> pd.DataFrame:
 
     Every group's shares sum to 1, so the stacked bars compare groups of any size.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> import pandas as pd
     >>> example = _example_result()
     >>> object.__setattr__(example, "metadata", pd.DataFrame({"group": ["a", "a", "b"]}))
@@ -407,7 +407,7 @@ def group_share_frame(result: TopicModelResult, column: str) -> pd.DataFrame:
 def group_stacked_bars(frame: pd.DataFrame) -> alt.Chart:
     """Compare the topic mix of each group as a normalized stacked bar chart.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> import pandas as pd
     >>> example = _example_result()
     >>> object.__setattr__(example, "metadata", pd.DataFrame({"group": ["a", "a", "b"]}))
@@ -475,7 +475,7 @@ def choose_date_bin(parsed: pd.Series) -> str:
 def time_share_frame(result: TopicModelResult, parsed: pd.Series, bin_by: str) -> pd.DataFrame:
     """Average the topic shares inside each time bin.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> import pandas as pd
     >>> dates = pd.to_datetime(pd.Series(["2025-01-01", "2025-01-01", "2025-02-01"]))
     >>> frame = time_share_frame(_example_result(), dates, "month")

@@ -1,14 +1,14 @@
 import numpy as np
 import pytest
 
-from browser_topics.config import AppConfig, ModelConfig, PreprocessConfig, StopWordConfig
-from browser_topics.errors import (
+from simple_topic_modeling.config import AppConfig, ModelConfig, PreprocessConfig, StopWordConfig
+from simple_topic_modeling.errors import (
     EmptyVocabularyError,
     TooFewDocumentsError,
     TooManyTopicsError,
 )
-from browser_topics.io import build_corpus
-from browser_topics.modeling import build_vectorizer, fit_topic_model, vectorize
+from simple_topic_modeling.io import build_corpus
+from simple_topic_modeling.modeling import build_vectorizer, fit_topic_model, vectorize
 
 
 def test_nmf_uses_tfidf_with_sublinear_scaling():

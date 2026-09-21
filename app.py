@@ -9,14 +9,14 @@
 #     "scikit-learn",
 #     "scipy",
 #     "wordcloud",
-#     "browser-topics @ public/wheels/browser_topics-2.0.0-py3-none-any.whl",
+#     "simple-topic-modeling @ public/wheels/simple_topic_modeling-2.0.0-py3-none-any.whl",
 # ]
 # ///
 
 import marimo
 
 __generated_with = "0.24.2"
-app = marimo.App(width="medium", app_title="Browser Topic Explorer")
+app = marimo.App(width="medium", app_title="Simple Topic Modeling")
 
 
 @app.cell(hide_code=True)
@@ -32,24 +32,27 @@ async def _():
         import micropip
 
         _wheel = (
-            mo.notebook_location() / "public" / "wheels" / "browser_topics-2.0.0-py3-none-any.whl"
+            mo.notebook_location()
+            / "public"
+            / "wheels"
+            / "simple_topic_modeling-2.0.0-py3-none-any.whl"
         )
         await micropip.install(str(_wheel))
 
     import pandas as pd
 
-    from browser_topics import exports, io, metrics, modeling, plots
-    from browser_topics import result as result_mod
-    from browser_topics.config import (
+    from simple_topic_modeling import exports, io, metrics, modeling, plots
+    from simple_topic_modeling import result as result_mod
+    from simple_topic_modeling.config import (
         LANGUAGE_LABELS,
         AppConfig,
         ModelConfig,
         PreprocessConfig,
         StopWordConfig,
     )
-    from browser_topics.errors import FriendlyMessage, TopicError
-    from browser_topics.preprocess import frequent_terms
-    from browser_topics.stopwords import effective_stopwords
+    from simple_topic_modeling.errors import FriendlyMessage, TopicError
+    from simple_topic_modeling.preprocess import frequent_terms
+    from simple_topic_modeling.stopwords import effective_stopwords
 
     return (
         AppConfig,
@@ -76,7 +79,7 @@ async def _():
 def _(mo):
     mo.md(
         """
-    # Browser Topic Explorer
+    # Simple Topic Modeling
 
     Find the themes in a collection of documents.
     """

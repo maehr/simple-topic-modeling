@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-from browser_topics.result import (
+from simple_topic_modeling.result import (
     _example_result,
     auto_labels,
     dominant_topics,

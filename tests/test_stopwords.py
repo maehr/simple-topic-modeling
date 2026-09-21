@@ -1,7 +1,7 @@
 import pytest
 
-from browser_topics.config import LANGUAGE_LABELS, StopWordConfig
-from browser_topics.stopwords import base_stopwords, effective_stopwords, parse_word_input
+from simple_topic_modeling.config import LANGUAGE_LABELS, StopWordConfig
+from simple_topic_modeling.stopwords import base_stopwords, effective_stopwords, parse_word_input
 
 
 @pytest.mark.parametrize("language", sorted(LANGUAGE_LABELS))

@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from browser_topics.config import AppConfig, ModelConfig
-from browser_topics.io import build_corpus
-from browser_topics.modeling import fit_topic_model
-from browser_topics.plots import (
+from simple_topic_modeling.config import AppConfig, ModelConfig
+from simple_topic_modeling.io import build_corpus
+from simple_topic_modeling.modeling import fit_topic_model
+from simple_topic_modeling.plots import (
     SNIPPET_LENGTH,
     document_frame,
     document_scatter,
@@ -20,7 +20,7 @@ from browser_topics.plots import (
     topic_map,
     word_cloud_png,
 )
-from browser_topics.result import _example_result, rename_topic
+from simple_topic_modeling.result import _example_result, rename_topic
 
 
 @pytest.fixture

@@ -1,14 +1,14 @@
 import numpy as np
 
-from browser_topics.config import AppConfig, ModelConfig
-from browser_topics.metrics import (
+from simple_topic_modeling.config import AppConfig, ModelConfig
+from simple_topic_modeling.metrics import (
     diagnostics,
     mean_pairwise_similarity,
     topic_diversity,
     topic_similarity,
 )
-from browser_topics.modeling import fit_topic_model
-from browser_topics.result import _example_result
+from simple_topic_modeling.modeling import fit_topic_model
+from simple_topic_modeling.result import _example_result
 
 
 def test_similarity_is_symmetric_with_a_unit_diagonal():

@@ -1,8 +1,8 @@
 contact_links:
-  - name: Are you looking for the documentation of Browser Topic Explorer?
+  - name: Are you looking for the documentation of Simple Topic Modeling?
     url: https://maehr.github.io/simple-topic-modeling
     about: The app itself explains each step. The README explains the files and the models.
-  - name: Do you want to discuss Browser Topic Explorer with the community?
+  - name: Do you want to discuss Simple Topic Modeling with the community?
     url: https://github.com/maehr/simple-topic-modeling/discussions
     about: Please see the discussions page.
 blank_issues_enabled: true

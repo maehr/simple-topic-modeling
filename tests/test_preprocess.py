@@ -1,5 +1,5 @@
-from browser_topics.config import PreprocessConfig
-from browser_topics.preprocess import clean_text, clean_texts, frequent_terms, token_pattern
+from simple_topic_modeling.config import PreprocessConfig
+from simple_topic_modeling.preprocess import clean_text, clean_texts, frequent_terms, token_pattern
 
 
 def test_each_cleaning_switch_can_be_turned_off():

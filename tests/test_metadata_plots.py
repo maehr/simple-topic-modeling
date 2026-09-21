@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from browser_topics.config import AppConfig, ModelConfig
-from browser_topics.io import build_corpus
-from browser_topics.modeling import fit_topic_model
-from browser_topics.plots import (
+from simple_topic_modeling.config import AppConfig, ModelConfig
+from simple_topic_modeling.io import build_corpus
+from simple_topic_modeling.modeling import fit_topic_model
+from simple_topic_modeling.plots import (
     choose_date_bin,
     group_share_frame,
     group_stacked_bars,

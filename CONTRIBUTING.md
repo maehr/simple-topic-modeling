@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for your interest in Browser Topic Explorer.
+Thank you for your interest in Simple Topic Modeling.
 
 Please discuss a large change in an [issue](https://github.com/maehr/simple-topic-modeling/issues)
 before you write the code. A small fix needs no issue.
@@ -28,7 +28,7 @@ uv run ty check
 uv run pytest --doctest-modules --cov --cov-fail-under=100
 ```
 
-Coverage on `browser_topics/` must stay at 100%. Keep each exclusion narrow and explicit.
+Coverage on `simple_topic_modeling/` must stay at 100%. Keep each exclusion narrow and explicit.
 
 Install the hooks to run the gate automatically:
 

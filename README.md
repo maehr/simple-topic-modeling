@@ -1,6 +1,6 @@
-# Browser Topic Explorer
+# Simple Topic Modeling
 
-Browser Topic Explorer finds the themes in a collection of documents. It runs fully in your browser.
+Simple Topic Modeling finds the themes in a collection of documents. It runs fully in your browser.
 
 [![GitHub issues](https://img.shields.io/github/issues/maehr/simple-topic-modeling.svg)](https://github.com/maehr/simple-topic-modeling/issues)
 [![GitHub forks](https://img.shields.io/github/forks/maehr/simple-topic-modeling.svg)](https://github.com/maehr/simple-topic-modeling/network)
@@ -158,7 +158,7 @@ Pyodide needs.
 ```text
 .
 ├── app.py                  the user interface, the state, and the downloads
-├── browser_topics/         the logic, which the tests cover
+├── simple_topic_modeling/  the logic, which the tests cover
 │   ├── config.py           the settings models
 │   ├── errors.py           one friendly message per failure
 │   ├── exports.py          the CSV, JSON, and ZIP files
@@ -174,7 +174,7 @@ Pyodide needs.
 └── tests/
 ```
 
-`app.py` holds the user interface only. `browser_topics/` holds the logic. The tests cover the
+`app.py` holds the user interface only. `simple_topic_modeling/` holds the logic. The tests cover the
 logic, not the notebook.
 
 ## Develop

@@ -20,7 +20,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-from browser_topics.errors import (
+from simple_topic_modeling.errors import (
     DecodeError,
     FriendlyMessage,
     NoUsableTextError,
@@ -167,10 +167,10 @@ def decode_text(file: UploadedFile) -> str:
     'café'
     >>> decode_text(UploadedFile("a.pdf", b"%PDF-1.4"))
     Traceback (most recent call last):
-    browser_topics.errors.UnsupportedFileError: ...
+    simple_topic_modeling.errors.UnsupportedFileError: ...
     >>> decode_text(UploadedFile("a.txt", b"\xff\xfe\x00bad"))
     Traceback (most recent call last):
-    browser_topics.errors.UnsupportedFileError: ...
+    simple_topic_modeling.errors.UnsupportedFileError: ...
     """
     if UploadedFile(file.name, b"").suffix in _BINARY_EXTENSIONS or b"\x00" in file.data:
         raise UnsupportedFileError(file.name)
@@ -318,7 +318,7 @@ def build_corpus(
     1
     >>> build_corpus(["", "  "], ["a", "b"])
     Traceback (most recent call last):
-    browser_topics.errors.NoUsableTextError: ...
+    simple_topic_modeling.errors.NoUsableTextError: ...
     """
     stats = corpus_stats(documents)
     keep = [index for index, doc in enumerate(documents) if doc.strip()]
@@ -346,7 +346,7 @@ def demo_table() -> pd.DataFrame:
     >>> len(frame) > 40
     True
     """
-    resource = files("browser_topics") / "data" / "demo_corpus.csv"
+    resource = files("simple_topic_modeling") / "data" / "demo_corpus.csv"
     return pd.read_csv(io.StringIO(resource.read_text(encoding="utf-8")))
 
 

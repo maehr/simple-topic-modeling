@@ -1,4 +1,4 @@
-# SPECS.md — Browser Topic Explorer
+# SPECS.md — Simple Topic Modeling
 
 **Status:** Draft implementation specification  
 **Target:** marimo app exported as HTML/WebAssembly and run with Pyodide  
@@ -6,7 +6,7 @@
 
 ## 1. Product
 
-Browser Topic Explorer lets users upload or paste a corpus, adjust preprocessing and stop words, fit a topic model locally in the browser, explore topics visually, rename them, and export the results.
+Simple Topic Modeling lets users upload or paste a corpus, adjust preprocessing and stop words, fit a topic model locally in the browser, explore topics visually, rename them, and export the results.
 
 The app should feel like a focused web tool rather than a notebook. Code is hidden in run mode.
 
@@ -133,11 +133,11 @@ Accept `sp` as an alias for `es` in imported configuration, but always export `e
 Package the stop-word lists with the app, e.g.:
 
 ```text
-src/browser_topics/data/stopwords/en.txt
-src/browser_topics/data/stopwords/de.txt
-src/browser_topics/data/stopwords/fr.txt
-src/browser_topics/data/stopwords/it.txt
-src/browser_topics/data/stopwords/es.txt
+simple_topic_modeling/data/stopwords/en.txt
+simple_topic_modeling/data/stopwords/de.txt
+simple_topic_modeling/data/stopwords/fr.txt
+simple_topic_modeling/data/stopwords/it.txt
+simple_topic_modeling/data/stopwords/es.txt
 ```
 
 Do not depend on downloading stop-word lists at runtime.
@@ -538,7 +538,7 @@ Suggested layout:
 ├── app.py
 ├── pyproject.toml
 ├── SPECS.md
-├── src/browser_topics/
+├── simple_topic_modeling/
 │   ├── io.py
 │   ├── preprocess.py
 │   ├── modeling.py

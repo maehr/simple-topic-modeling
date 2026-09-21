@@ -48,7 +48,7 @@ jobs:
       - name: Check the published files
         run: |
           version=$(uv version --short)
-          for f in index.html "public/wheels/browser_topics-${version}-py3-none-any.whl"; do
+          for f in index.html "public/wheels/simple_topic_modeling-${version}-py3-none-any.whl"; do
             if [ ! -f "dist/$f" ]; then
               echo "MISSING from the site: $f"
               exit 1

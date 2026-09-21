@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from browser_topics.config import AppConfig, ModelConfig, load_app_config
-from browser_topics.exports import (
+from simple_topic_modeling.config import AppConfig, ModelConfig, load_app_config
+from simple_topic_modeling.exports import (
     config_json,
     documents_topics_frame,
     project_zip,
@@ -16,9 +16,9 @@ from browser_topics.exports import (
     topic_terms_frame,
     topics_frame,
 )
-from browser_topics.io import build_corpus
-from browser_topics.modeling import fit_topic_model
-from browser_topics.result import rename_topic
+from simple_topic_modeling.io import build_corpus
+from simple_topic_modeling.modeling import fit_topic_model
+from simple_topic_modeling.result import rename_topic
 
 
 @pytest.fixture

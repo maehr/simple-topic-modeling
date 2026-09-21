@@ -16,16 +16,16 @@ from sklearn.decomposition import NMF, LatentDirichletAllocation
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
-from browser_topics.config import AppConfig, ModelConfig
-from browser_topics.errors import (
+from simple_topic_modeling.config import AppConfig, ModelConfig
+from simple_topic_modeling.errors import (
     MIN_DOCUMENTS,
     EmptyVocabularyError,
     TooFewDocumentsError,
     TooManyTopicsError,
     model_did_not_converge,
 )
-from browser_topics.preprocess import clean_texts, token_pattern
-from browser_topics.result import (
+from simple_topic_modeling.preprocess import clean_texts, token_pattern
+from simple_topic_modeling.result import (
     TopicModelResult,
     auto_labels,
     dominant_topics,
@@ -33,10 +33,10 @@ from browser_topics.result import (
     project_documents,
     topic_centroids,
 )
-from browser_topics.stopwords import effective_stopwords, vectorizer_stopwords
+from simple_topic_modeling.stopwords import effective_stopwords, vectorizer_stopwords
 
 if TYPE_CHECKING:
-    from browser_topics.io import Corpus
+    from simple_topic_modeling.io import Corpus
 
 __all__ = ["build_vectorizer", "fit_topic_model", "vectorize"]
 
@@ -45,7 +45,7 @@ def build_vectorizer(config: AppConfig) -> TfidfVectorizer | CountVectorizer:
     """Build the vectorizer that `SPECS.md` section 4 specifies for the chosen model.
 
     NMF uses TF-IDF. LDA uses raw counts. Both run with `lowercase=False`, because
-    `browser_topics.preprocess` already lowercased the text.
+    `simple_topic_modeling.preprocess` already lowercased the text.
 
     >>> build_vectorizer(AppConfig()).sublinear_tf
     True
@@ -124,7 +124,7 @@ def fit_topic_model(corpus: Corpus, config: AppConfig) -> TopicModelResult:
 
     This is the one expensive step. `SPECS.md` section 4 runs it only on an explicit action.
 
-    >>> from browser_topics.io import build_corpus
+    >>> from simple_topic_modeling.io import build_corpus
     >>> texts = ["cat dog runs fast", "cat sleeps often", "dog barks loudly",
     ...          "cat dog play together", "bird sings song", "bird flies high"]
     >>> corpus, _ = build_corpus(texts, [f"d{i}" for i in range(6)])

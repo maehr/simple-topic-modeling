@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from browser_topics.errors import FriendlyMessage
-from browser_topics.result import top_terms
+from simple_topic_modeling.errors import FriendlyMessage
+from simple_topic_modeling.result import top_terms
 
 if TYPE_CHECKING:
-    from browser_topics.result import TopicModelResult
+    from simple_topic_modeling.result import TopicModelResult
 
 __all__ = [
     "DIVERSITY_TERM_COUNT",
@@ -99,7 +99,7 @@ def topic_diversity(
 def diagnostics(result: TopicModelResult) -> dict[str, Any]:
     """Collect the descriptive numbers and the friendly notices of `SPECS.md` section 6.
 
-    >>> from browser_topics.result import _example_result
+    >>> from simple_topic_modeling.result import _example_result
     >>> report = diagnostics(_example_result())
     >>> report["topic_count"], report["documents_used"]
     (2, 3)

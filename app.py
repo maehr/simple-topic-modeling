@@ -485,14 +485,20 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(get_reset, mo, set_reset):
+def _(get_reset, mo, set_reset, source):
     get_reset()
     model_type = mo.ui.dropdown(
         options={"NMF (recommended)": "nmf", "LDA": "lda"},
         value="NMF (recommended)",
         label="Model",
     )
-    n_topics = mo.ui.slider(2, 30, value=10, step=1, label="Number of topics", show_value=True)
+    # The demo corpus carries six newspaper sections. Six topics therefore give a first result
+    # that a newcomer can check against the category column. Ten topics split the finance
+    # articles into several topics of bare numbers.
+    _start_topics = 6 if source.value == "Demo data" else 10
+    n_topics = mo.ui.slider(
+        2, 30, value=_start_topics, step=1, label="Number of topics", show_value=True
+    )
     max_features = mo.ui.number(100, 20000, value=5000, step=100, label="Max vocabulary")
     min_df = mo.ui.number(1, 100, value=2, step=1, label="Minimum document frequency")
     max_df = mo.ui.slider(
@@ -511,8 +517,8 @@ def _(get_reset, mo, set_reset):
 
 
 @app.cell(hide_code=True)
-def _(max_df, max_features, min_df, mo, model_type, n_topics, ngrams, reset_button):
-    _help = mo.accordion(
+def _(max_df, max_features, min_df, mo, model_type, n_topics, ngrams, reset_button, source):
+    _model_help = mo.accordion(
         {
             "When to use NMF or LDA": mo.md(
                 """
@@ -523,36 +529,58 @@ def _(max_df, max_features, min_df, mo, model_type, n_topics, ngrams, reset_butt
             **LDA** suits medium and long documents, and it gives a probabilistic topic mixture.
             It is slower and more sensitive to the parameters. Use NMF if you are unsure.
             """
-            ),
-            "What the parameters do": mo.md(
-                """
-            **Number of topics.** How many themes the model looks for. Start around 8 to 12.
-            Raise it if the topics are too broad. Lower it if many topics look alike or tiny.
+            )
+        }
+    )
+    _note = (
+        mo.md(
+            "*The newspaper sorted the demo articles into six sections, so the app starts at six"
+            " topics. Move the slider to see the themes split or merge.*"
+        )
+        if source.value == "Demo data"
+        else mo.md("")
+    )
+    _advanced = mo.accordion(
+        {
+            "Advanced settings": mo.vstack(
+                [
+                    mo.hstack(
+                        [max_features, min_df, max_df, ngrams],
+                        justify="start",
+                        gap=2,
+                        wrap=True,
+                    ),
+                    reset_button,
+                    mo.md(
+                        """
+                    **Number of topics.** How many themes the model looks for. Start around 8 to
+                    12 for a corpus that you do not know. Raise it if the topics are too broad.
+                    Lower it if many topics look alike or tiny.
 
-            **Max vocabulary.** How many distinct terms the model considers. 5,000 is a good
-            browser-friendly default. Raise it for a large, varied corpus. Lower it for speed.
+                    **Max vocabulary.** How many distinct terms the model considers. 5,000 is a
+                    good browser-friendly default. Raise it for a large, varied corpus. Lower it
+                    for speed.
 
-            **Minimum document frequency.** Ignore a word that occurs in fewer than this many
-            documents. Raise it to drop typos, names, and very rare terms.
+                    **Minimum document frequency.** Ignore a word that occurs in fewer than this
+                    many documents. Raise it to drop typos, names, and very rare terms.
 
-            **Maximum document frequency.** Ignore a word that occurs in almost every document.
-            `0.95` ignores a word that appears in more than 95% of documents.
+                    **Maximum document frequency.** Ignore a word that occurs in almost every
+                    document. `0.95` ignores a word that appears in more than 95% of documents.
 
-            **N-grams.** Single words, or also two-word phrases such as *climate change*. Phrases
-            can improve a label, but they make the vocabulary larger and slower.
-
-            **Iterations.** Usually leave this alone. Raise it only if the app reports that the
-            model did not converge.
-            """
-            ),
+                    **N-grams.** Single words, or also two-word phrases such as *climate change*.
+                    Phrases can improve a label, but they make the vocabulary larger and slower.
+                    """
+                    ),
+                ]
+            )
         }
     )
     mo.vstack(
         [
             mo.hstack([model_type, n_topics], justify="start", gap=2),
-            mo.hstack([max_features, min_df, max_df, ngrams], justify="start", gap=2, wrap=True),
-            reset_button,
-            _help,
+            _note,
+            _model_help,
+            _advanced,
         ]
     )
     return

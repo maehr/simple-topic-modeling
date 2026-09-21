@@ -81,7 +81,14 @@ def _(mo):
         """
     # Simple Topic Modeling
 
-    Find the themes in a collection of documents.
+    This app finds the themes in a collection of documents.
+
+    You get a list of topics. Each topic holds the words that occur together, the share of the
+    corpus that the topic covers, and the documents that match it.
+
+    A run takes a few seconds for a few hundred documents.
+
+    **A demo corpus is already loaded.** Go to **Step 3**. Select **Run model** to see a result.
     """
     )
     return
@@ -98,6 +105,42 @@ def _(mo):
         """
         ),
         kind="info",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion(
+        {
+            "How to use this tool": mo.md(
+                """
+            1. **Add data.** Use the demo corpus, or load your own documents.
+            2. **Configure.** Set the language, then set the number of topics.
+            3. **Run the model.** Select **Run model**. The app fits the model in this browser.
+            4. **Explore and export.** Read each topic, name it, then download the results.
+
+            The demo corpus holds 295 French articles from two Swiss newspapers of 1914. A machine
+            read the articles from a scan, so some words carry errors. A real archive looks like
+            this.
+            """
+            ),
+            "What is a topic model?": mo.md(
+                """
+            A topic model reads a collection of documents. It finds the groups of words that occur
+            together. Each group is a **topic**.
+
+            A **term** is one word in a topic. The model gives each term a weight. The terms with
+            the highest weight tell you what the topic is about.
+
+            A **score** says how strongly one document belongs to one topic. One document can hold
+            several topics. The highest score names the main topic of that document.
+
+            The model does not know what a topic means. You read the terms and the documents. Then
+            you give the topic a name.
+            """
+            ),
+        }
     )
     return
 
@@ -224,7 +267,7 @@ def _(mo, table, text_documents, text_names):
     elif text_names:
         _controls = mo.md(f"**{len(text_names)} files.** One file is one document.")
     else:
-        _controls = mo.md("*Add data to continue.*")
+        _controls = mo.md("*No data yet. Choose **Demo data** above to load the demo corpus.*")
     _controls
     return date_column, group_column, id_column, split_mode, text_column
 
@@ -682,7 +725,9 @@ def _(
     topic_select,
 ):
     if display_result is None:
-        _view = mo.md("*Run the model to explore the topics.*")
+        _view = mo.md(
+            "*No result yet. Go to **Step 3** and select **Run model** to build the topics.*"
+        )
     else:
         _overview = mo.vstack(
             [
@@ -834,7 +879,45 @@ def _(
                 ),
             ]
         )
-        _view = mo.ui.tabs(_tabs)
+        _orientation = mo.md(
+            """
+        **Overview** shows every topic at once. **Topics** opens one topic in detail.
+        **Documents** lists the documents of a topic. **Metadata** charts the topics against your
+        own columns. **Diagnostics** describes the run.
+
+        Start in **Topics**. Read the terms of a topic. Give the topic a name. Then go to Step 4
+        and export your results.
+        """
+        )
+        _glossary = mo.accordion(
+            {
+                "Glossary": mo.md(
+                    """
+                **Topic.** A group of words that occur together in the corpus.
+
+                **Term.** One word or phrase in a topic. The model gives each term a weight.
+
+                **Prevalence.** The share of the corpus that one topic covers.
+
+                **Dominant score.** The score of the strongest topic of one document. A low score
+                means that the document fits no topic well.
+
+                **Topic diversity.** The share of top terms that occur in one topic only. A low
+                value means that the topics repeat each other.
+
+                **Document frequency.** The number of documents that hold a term. The app uses it
+                to drop a term that is too rare or too common.
+
+                **N-gram.** A run of words that the model treats as one term. *Chronique
+                militaire* is a 2-gram.
+
+                **TF-IDF.** A weight for a term. It rises when the term occurs often in one
+                document. It falls when the term occurs in many documents.
+                """
+                )
+            }
+        )
+        _view = mo.vstack([_orientation, mo.ui.tabs(_tabs), _glossary])
     _view
     return
 
@@ -855,7 +938,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(display_result, exports, include_text, mo, pending_config):
     if display_result is None:
-        _view = mo.md("*Run the model to download the results.*")
+        _view = mo.md(
+            "*No result yet. Go to **Step 3** and select **Run model** to unlock the downloads.*"
+        )
     else:
         _files = {
             "documents_topics.csv": exports.documents_topics_frame(

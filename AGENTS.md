@@ -246,7 +246,7 @@ Write each commit message as a Conventional Commit. `cliff.toml` maps the commit
 group. Run this command after you commit:
 
 ```bash
-git-cliff --tag v2.0.0 -o CHANGELOG.md
+git-cliff --tag v2.0.0-alpha -o CHANGELOG.md
 ```
 
 Change the tag when you bump the version in `pyproject.toml`.

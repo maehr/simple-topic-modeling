@@ -239,7 +239,7 @@ Write each commit message as a [Conventional Commit](https://www.conventionalcom
 update the changelog:
 
 ```bash
-git-cliff --tag v2.0.0 -o CHANGELOG.md
+git-cliff --tag v2.0.0-alpha -o CHANGELOG.md
 ```
 
 `AGENTS.md` holds the rules for this repository. Read it before you change the code.

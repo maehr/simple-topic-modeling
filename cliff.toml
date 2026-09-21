@@ -10,7 +10,7 @@ This file records every notable change to Simple Topic Modeling.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Version 2.0.0 replaces version 1, which was a Streamlit app that ran through stlite. The two share
+Version 2 replaces version 1, which was a Streamlit app that ran through stlite. The two share
 no code. Version 1 stays at the tag `v1.0.0` and the branch `legacy/streamlit`, and it receives no
 further work.
 

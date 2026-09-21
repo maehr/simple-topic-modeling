@@ -5,11 +5,11 @@ This file records every notable change to Simple Topic Modeling.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Version 2.0.0 replaces version 1, which was a Streamlit app that ran through stlite. The two share
+Version 2 replaces version 1, which was a Streamlit app that ran through stlite. The two share
 no code. Version 1 stays at the tag `v1.0.0` and the branch `legacy/streamlit`, and it receives no
 further work.
 
-## [2.0.0] - 2026-09-20
+## [2.0.0-alpha] - 2026-09-21
 
 ### Added
 
@@ -21,14 +21,23 @@ further work.
 - Add the metadata and diagnostics tabs and the ZIP export
 - Warn about a large corpus and offer sampling
 - **Breaking:** Release as version 2.0.0
+- **Breaking:** Replace the demo corpus with 1914 Swiss newspaper articles
+- Add the onboarding text for a first-time user
+- Hide the tuning controls and start the demo at six topics
+- Make a run repeatable and credit the corpus and the author
 
 ### Build and tooling
 
 - Scaffold project, tooling gate and WASM export path
 - Add the workflows, the health files and Dependabot
 
+### Changed
+
+- **Breaking:** Rename the project to Simple Topic Modeling
+
 ### Documentation
 
 - Expand the README and record the project decisions
 - Record the move to the remote and the version 1 retirement
+- Write the changelog for version 2.0.0
 

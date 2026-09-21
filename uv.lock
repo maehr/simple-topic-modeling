@@ -1521,7 +1521,7 @@ wheels = [
 
 [[package]]
 name = "simple-topic-modeling"
-version = "2.0.0"
+version = "2.0.0a0"
 source = { editable = "." }
 dependencies = [
     { name = "altair" },

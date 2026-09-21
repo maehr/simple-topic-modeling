@@ -9,7 +9,7 @@
 #     "scikit-learn",
 #     "scipy",
 #     "wordcloud",
-#     "simple-topic-modeling @ public/wheels/simple_topic_modeling-2.0.0-py3-none-any.whl",
+#     "simple-topic-modeling @ public/wheels/simple_topic_modeling-2.0.0a0-py3-none-any.whl",
 # ]
 # ///
 
@@ -35,7 +35,7 @@ async def _():
             mo.notebook_location()
             / "public"
             / "wheels"
-            / "simple_topic_modeling-2.0.0-py3-none-any.whl"
+            / "simple_topic_modeling-2.0.0a0-py3-none-any.whl"
         )
         await micropip.install(str(_wheel))
 

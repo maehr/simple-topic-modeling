@@ -175,7 +175,8 @@ def config_json(config: AppConfig, topic_names: list[str] | None = None) -> byte
     >>> payload["model"]["model_type"]
     'nmf'
     >>> sorted(payload)
-    ['app_version', 'language', 'model', 'preprocess', 'stop_words', 'topic_names']
+    ['analyse_as', 'app_version', 'language', 'model', 'preprocess', 'split_mode',
+     'stop_words', 'topic_names']
     """
     payload = config.model_dump()
     payload["topic_names"] = topic_names or []

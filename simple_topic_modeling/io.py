@@ -20,6 +20,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
+from simple_topic_modeling.config import SplitMode
 from simple_topic_modeling.errors import (
     DecodeError,
     FriendlyMessage,
@@ -39,14 +40,15 @@ __all__ = [
     "decode_text",
     "demo_table",
     "detect_kind",
+    "normalize_whitespace",
     "read_table",
     "sample_corpus",
+    "split_long_document",
     "split_text",
     "strip_markup",
 ]
 
 FileKind = Literal["csv", "tsv", "json", "jsonl", "text"]
-SplitMode = Literal["whole", "blank_lines", "lines"]
 
 _TABLE_EXTENSIONS: dict[str, FileKind] = {
     ".csv": "csv",
@@ -63,8 +65,11 @@ _BINARY_EXTENSIONS = frozenset(
 )
 
 _BLANK_LINES = re.compile(r"\n\s*\n")
+_INLINE_SPACE = re.compile(r"[^\S\n]+")
+_EXTRA_BLANK_LINES = re.compile(r"\n{3,}")
 _MARKDOWN_NOISE = re.compile(
-    r"^\s{0,3}#{1,6}\s+|^\s{0,3}>\s?|^\s{0,3}[-*+]\s+|^\s{0,3}\d+\.\s+|^\s*[-*_]{3,}\s*$",
+    r"^[ \t]{0,3}#{1,6}[ \t]+|^[ \t]{0,3}>[ \t]?|^[ \t]{0,3}[-*+][ \t]+|^[ \t]{0,3}\d+\.[ \t]+"
+    r"|^[ \t]*[-*_]{3,}[ \t]*$",
     re.MULTILINE,
 )
 _MARKDOWN_INLINE = re.compile(r"!?\[([^\]]*)\]\([^)]*\)|[*_`~]{1,3}")
@@ -204,17 +209,31 @@ class _TagStripper(HTMLParser):
             self.parts.append(data)
 
 
+def normalize_whitespace(text: str) -> str:
+    r"""Collapse the spaces inside each line, and keep the line breaks.
+
+    `split_text` needs the line breaks. A run of blank lines becomes one blank line.
+
+    >>> normalize_whitespace("  a   b \r\n\n\n\n c\t d ")
+    'a b\n\nc d'
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [_INLINE_SPACE.sub(" ", line).strip() for line in text.split("\n")]
+    return _EXTRA_BLANK_LINES.sub("\n\n", "\n".join(lines)).strip()
+
+
 def strip_markup(text: str, filename: str) -> str:
     r"""Remove HTML, XML, or Markdown syntax and keep the readable text.
 
-    The app adds no parser dependency, as `SPECS.md` section 2 requires.
+    The app adds no parser dependency, as `SPECS.md` section 2 requires. The line breaks stay, so
+    `split_text` can still split the text into paragraphs.
 
     >>> strip_markup("<p>Hello <b>world</b></p>", "page.html")
     'Hello world'
     >>> strip_markup("<p>a</p><script>var x=1</script>", "page.html")
     'a'
     >>> strip_markup("# Title\n\nSome **bold** text", "notes.md")
-    'Title Some bold text'
+    'Title\n\nSome bold text'
     >>> strip_markup("[link](http://example.com) here", "notes.md")
     'link here'
     >>> strip_markup("plain text", "notes.txt")
@@ -229,7 +248,7 @@ def strip_markup(text: str, filename: str) -> str:
     elif suffix in _MARKDOWN_EXTENSIONS:
         text = _MARKDOWN_NOISE.sub(" ", text)
         text = _MARKDOWN_INLINE.sub(r"\1", text)
-    return re.sub(r"\s+", " ", text).strip()
+    return normalize_whitespace(text)
 
 
 def split_text(text: str, mode: SplitMode) -> list[str]:
@@ -248,6 +267,40 @@ def split_text(text: str, mode: SplitMode) -> list[str]:
         return [text.strip()] if text.strip() else []
     parts = _BLANK_LINES.split(text) if mode == "blank_lines" else text.splitlines()
     return [part.strip() for part in parts if part.strip()]
+
+
+def split_long_document(
+    text: str, name: str, mode: SplitMode = "blank_lines"
+) -> tuple[list[str], list[str], pd.DataFrame]:
+    r"""Split one long document into ordered segments, and keep the source position of each.
+
+    `split_text` does the split. Each segment becomes one modelling document. The metadata names
+    the parent document and the position of the segment, so the source order survives every
+    filter and every export. `segment_index` counts from 0. `segment_number` counts from 1.
+
+    >>> segments, ids, metadata = split_long_document("one\n\n\ntwo\n\nthree", "book.txt")
+    >>> segments
+    ['one', 'two', 'three']
+    >>> ids
+    ['book.txt#1', 'book.txt#2', 'book.txt#3']
+    >>> metadata.columns.tolist()
+    ['parent_document_id', 'segment_index', 'segment_number']
+    >>> metadata["segment_index"].tolist(), metadata["segment_number"].tolist()
+    ([0, 1, 2], [1, 2, 3])
+    >>> split_long_document("a\nb", "notes.txt", "lines")[1]
+    ['notes.txt#1', 'notes.txt#2']
+    """
+    segments = split_text(text, mode)
+    count = len(segments)
+    identifiers = [f"{name}#{number}" for number in range(1, count + 1)]
+    metadata = pd.DataFrame(
+        {
+            "parent_document_id": [name] * count,
+            "segment_index": list(range(count)),
+            "segment_number": list(range(1, count + 1)),
+        }
+    )
+    return segments, identifiers, metadata
 
 
 def read_table(file: UploadedFile) -> pd.DataFrame:

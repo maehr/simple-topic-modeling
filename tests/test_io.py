@@ -71,7 +71,7 @@ def test_style_blocks_are_dropped():
 
 
 def test_markdown_lists_and_quotes_lose_their_syntax():
-    assert strip_markup("- one\n- two\n> quoted", "notes.md") == "one two quoted"
+    assert strip_markup("- one\n- two\n> quoted", "notes.md") == "one\ntwo\nquoted"
 
 
 def test_markdown_rules_and_numbered_lists_are_stripped():

@@ -17,12 +17,14 @@ from simple_topic_modeling.errors import ConfigFileError
 __all__ = [
     "LANGUAGE_ALIASES",
     "LANGUAGE_LABELS",
+    "AnalysisMode",
     "AppConfig",
     "Language",
     "ModelConfig",
     "ModelType",
     "NgramChoice",
     "PreprocessConfig",
+    "SplitMode",
     "StopWordConfig",
     "config_from_upload",
     "load_app_config",
@@ -32,6 +34,10 @@ __all__ = [
 Language = Literal["en", "de", "fr", "it", "es"]
 ModelType = Literal["nmf", "lda"]
 NgramChoice = Literal["1", "1-2", "2"]
+SplitMode = Literal["whole", "blank_lines", "lines"]
+"""How the app splits one text into documents: not at all, on blank lines, or on each line."""
+AnalysisMode = Literal["corpus", "long_document"]
+"""How the app treats one text: as unrelated documents, or as ordered segments of one document."""
 
 LANGUAGE_LABELS: dict[Language, str] = {
     "en": "English",
@@ -207,6 +213,13 @@ class AppConfig(BaseModel):
     True
     >>> AppConfig().summary(2418)
     '2,418 documents · English · NMF · 10 topics · max 5,000 terms'
+
+    `analyse_as` and `split_mode` record how the app split one text into documents. A
+    `split_mode` of `None` means that the app did not split the input. Both fields have defaults,
+    so a `config.json` from an older version still loads.
+
+    >>> AppConfig().analyse_as, AppConfig().split_mode
+    ('corpus', None)
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -216,6 +229,8 @@ class AppConfig(BaseModel):
     preprocess: PreprocessConfig = PreprocessConfig()
     stop_words: StopWordConfig = StopWordConfig()
     model: ModelConfig = ModelConfig()
+    analyse_as: AnalysisMode = "corpus"
+    split_mode: SplitMode | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -229,9 +244,15 @@ class AppConfig(BaseModel):
 
         >>> AppConfig(language="de", model=ModelConfig(n_topics=8)).summary(12)
         '12 documents · German · NMF · 8 topics · max 5,000 terms'
+
+        A long document counts its segments, not its documents.
+
+        >>> AppConfig(analyse_as="long_document").summary(40)
+        '40 segments · English · NMF · 10 topics · max 5,000 terms'
         """
+        unit = "segments" if self.analyse_as == "long_document" else "documents"
         return (
-            f"{document_count:,} documents"
+            f"{document_count:,} {unit}"
             f" · {LANGUAGE_LABELS[self.language]}"
             f" · {self.model.model_type.upper()}"
             f" · {self.model.n_topics} topics"

@@ -49,8 +49,8 @@ a known hash and records each source URL and each SHA-256 in
 
 Every run uses a fixed random seed. The same settings on the same corpus give the same topics.
 
-1. Download `config.json` in Step 4. It records the app version, the language, the stop words, and
-   every model parameter, including the seed.
+1. Download `config.json` in Step 4. It records the app version, the language, the stop words,
+   every model parameter, including the seed, and the split of one text.
 2. Download the demo corpus in Step 1, or keep your own corpus.
 3. Send both files to your reader.
 4. The reader loads `config.json` in Step 2. The app restores each setting.
@@ -94,6 +94,25 @@ the tags from HTML and XML. It removes the common syntax from Markdown.
 
 The app rejects a binary file, such as a PDF file, a DOCX file, an image, or a ZIP archive.
 
+## Analyse one long document
+
+A book, a thesis, or a transcript is one long text. The app can show where each topic occurs in it.
+
+1. Load one text file, or paste one text.
+2. Set **Analyse as** to **Long document**.
+3. Keep **Split on blank lines**. The app then makes one segment from each paragraph.
+4. Select **Run model**.
+
+Each segment is one document for the model. Each segment keeps its position in the text:
+
+- **Topics** shows where the selected topic occurs, and the representative passages.
+- **Documents** shows the topic share through the whole text, as a heatmap.
+- `documents_topics.csv` holds `parent_document_id`, `segment_index`, and `segment_number`, so you
+  can rebuild the order of the text.
+
+**Corpus document** is the default. It splits the text the same way, but it treats the segments as
+unrelated documents.
+
 ## Languages
 
 The app ships a stop-word list for each language below. The language changes the stop words only. It
@@ -122,7 +141,9 @@ The explorer holds five tabs:
 
 - **Overview** shows the topic cards, the topic map, the prevalence bars, and the similarity heatmap.
 - **Topics** shows the top terms, the word cloud, and the representative documents of one topic.
-- **Documents** shows the document map, a text search, a topic filter, and a score filter.
+  A long document also shows where the topic occurs.
+- **Documents** shows the document map, a text search, a topic filter, and a score filter. A long
+  document also shows the topic share through the text.
 - **Metadata** shows the topic mix per group and the topic share over time. It needs a group column
   or a date column.
 - **Diagnostics** shows the descriptive numbers and the friendly notices. These numbers are not a

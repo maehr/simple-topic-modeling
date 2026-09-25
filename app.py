@@ -180,6 +180,10 @@ def _(mo, source):
             Use **TXT, Markdown, HTML, or any other UTF-8 text file** when each file is itself
             one document.
 
+            Use **one long text**, such as a book, a thesis, or a transcript, to see where each
+            topic occurs in it. Load the one file, then choose **Analyse as: Long document**. The
+            app splits the text into paragraphs and keeps their order.
+
             PDF, DOCX, images, and ZIP files are out of scope.
             """
             )
@@ -244,7 +248,37 @@ def _(TopicError, file_input, io, paste_input, source):
 
 
 @app.cell(hide_code=True)
-def _(mo, table, text_documents, text_names):
+def _(get_loaded, mo):
+    # These two controls apply to one text only. A loaded config.json restores them, so a reader
+    # splits the text exactly as the author did.
+    _loaded = get_loaded()
+    _config = _loaded[0] if _loaded is not None else None
+    _split_labels = {
+        "whole": "Whole file is one document",
+        "blank_lines": "Split on blank lines",
+        "lines": "Split by line",
+    }
+    _mode_labels = {"corpus": "Corpus document", "long_document": "Long document"}
+    split_mode = mo.ui.dropdown(
+        options={label: code for code, label in _split_labels.items()},
+        value=_split_labels[
+            _config.split_mode
+            if _config is not None and _config.split_mode is not None
+            else "blank_lines"
+        ],
+        label="How should the app split this text?",
+    )
+    analyse_as = mo.ui.radio(
+        options={label: code for code, label in _mode_labels.items()},
+        value=_mode_labels[_config.analyse_as if _config is not None else "corpus"],
+        label="Analyse as",
+        inline=True,
+    )
+    return analyse_as, split_mode
+
+
+@app.cell(hide_code=True)
+def _(analyse_as, mo, split_mode, table, text_documents, text_names):
     _columns = [str(name) for name in table.columns] if table is not None else []
     _guess = next(
         (name for name in _columns if name.lower() in {"text", "body", "content", "abstract"}),
@@ -272,33 +306,34 @@ def _(mo, table, text_documents, text_names):
     group_column = mo.ui.dropdown(
         options=["(none)", *_columns], value=_group_guess, label="Group column"
     )
-    split_mode = mo.ui.dropdown(
-        options={
-            "Whole file is one document": "whole",
-            "Split on blank lines": "blank_lines",
-            "Split by line": "lines",
-        },
-        value="Split on blank lines",
-        label="How should the app split this text?",
-    )
 
     if table is not None:
         _controls = mo.hstack(
             [text_column, id_column, date_column, group_column], justify="start", gap=1, wrap=True
         )
     elif text_documents is not None and len(text_documents) == 1:
-        _controls = split_mode
+        _controls = mo.vstack(
+            [
+                mo.hstack([analyse_as, split_mode], justify="start", gap=2, wrap=True),
+                mo.md(
+                    "*A **corpus document** splits the text into unrelated documents. A **long"
+                    " document** keeps the order of its paragraphs, so the results show where"
+                    " each topic occurs in the text.*"
+                ),
+            ]
+        )
     elif text_names:
         _controls = mo.md(f"**{len(text_names)} files.** One file is one document.")
     else:
         _controls = mo.md("*No data yet. Choose **Demo data** above to load the demo corpus.*")
     _controls
-    return date_column, group_column, id_column, split_mode, text_column
+    return date_column, group_column, id_column, text_column
 
 
 @app.cell(hide_code=True)
 def _(
     TopicError,
+    analyse_as,
     date_column,
     group_column,
     id_column,
@@ -330,9 +365,13 @@ def _(
             corpus, stats = io.build_corpus(_documents, _identifiers, _metadata)
         elif text_documents is not None and text_names is not None:
             if len(text_documents) == 1:
-                _pieces = io.split_text(text_documents[0], split_mode.value)
-                _identifiers = [f"{text_names[0]}#{number + 1}" for number in range(len(_pieces))]
-                corpus, stats = io.build_corpus(_pieces, _identifiers)
+                # One text always splits the same way. A long document also keeps the parent
+                # and the position of each segment as metadata.
+                _pieces, _identifiers, _positions = io.split_long_document(
+                    text_documents[0], text_names[0], split_mode.value
+                )
+                _metadata = _positions if analyse_as.value == "long_document" else None
+                corpus, stats = io.build_corpus(_pieces, _identifiers, _metadata)
             else:
                 corpus, stats = io.build_corpus(text_documents, list(text_names))
     except TopicError as error:
@@ -379,10 +418,12 @@ def _(corpus, corpus_error, load_error, mo, pd, stats):
 def _(corpus, io, mo):
     _warning = io.corpus_size_warning(corpus.documents) if corpus is not None else None
     use_sample = mo.ui.checkbox(value=_warning is not None, label="Model a sample instead")
+    # The value must stay inside the bounds, or marimo raises and every later cell fails. A
+    # corpus below the minimum shows no sample control, so the clamp changes nothing it models.
     sample_size = mo.ui.number(
         100,
         50_000,
-        value=min(5_000, len(corpus)) if corpus else 5_000,
+        value=max(100, min(5_000, len(corpus))) if corpus else 5_000,
         step=100,
         label="Sample size",
     )
@@ -740,6 +781,7 @@ def _(
     AppConfig,
     ModelConfig,
     PreprocessConfig,
+    analyse_as,
     language,
     max_df,
     max_features,
@@ -748,9 +790,16 @@ def _(
     n_topics,
     ngrams,
     random_seed,
+    split_mode,
     stop_word_config,
+    table,
+    text_documents,
 ):
+    # The split settings apply to one text only. Any other input records no split.
+    _one_text = table is None and text_documents is not None and len(text_documents) == 1
     pending_config = AppConfig(
+        analyse_as=analyse_as.value if _one_text else "corpus",
+        split_mode=split_mode.value if _one_text else None,
         language=language.value,
         preprocess=PreprocessConfig(),
         stop_words=stop_word_config,
@@ -919,6 +968,34 @@ def _(
         )
 
         _index = topic_select.value if topic_select.value is not None else 0
+        # The fitted result, not the live control, decides the mode. A changed control only
+        # raises the "Configuration changed" banner until the next run.
+        _long = display_result.config.get("analyse_as") == "long_document"
+        if _long:
+            _positions = plots.position_frame(display_result)
+            _examples = [
+                mo.ui.altair_chart(plots.topic_position_area(_positions, _index)),
+                mo.md("### Representative passages"),
+                mo.md(
+                    "*The segment number is the position of the passage in the source. Segment 1"
+                    f" opens the text. Segment {display_result.n_documents} is the last one"
+                    " that the model used.*"
+                ),
+                mo.ui.table(plots.representative_passages(display_result, _index), selection=None),
+            ]
+            _position_view = [
+                mo.ui.altair_chart(plots.position_heatmap(_positions, display_result.topic_names)),
+                mo.md(
+                    "*Each column is one position in the text. A darker cell means a larger"
+                    " topic share. A long text averages neighbouring segments into one column.*"
+                ),
+            ]
+        else:
+            _examples = [
+                mo.md("### Representative documents"),
+                mo.ui.table(plots.representative_documents(display_result, _index), selection=None),
+            ]
+            _position_view = []
         _topics = mo.vstack(
             [
                 topic_select,
@@ -928,8 +1005,7 @@ def _(
                 ),
                 mo.ui.altair_chart(plots.top_term_bars(display_result, _index)),
                 mo.image(plots.word_cloud_png(display_result, _index), width=700),
-                mo.md("### Representative documents"),
-                mo.ui.table(plots.representative_documents(display_result, _index), selection=None),
+                *_examples,
                 mo.accordion(
                     {
                         "How to read a topic": mo.md(
@@ -970,6 +1046,7 @@ def _(
             )
         _explore = mo.vstack(
             [
+                *_position_view,
                 mo.hstack(
                     [topic_filter, score_filter, document_search],
                     justify="start",
@@ -1064,6 +1141,9 @@ def _(
         **Documents** lists the documents of a topic. **Metadata** charts the topics against your
         own columns. **Diagnostics** describes the run.
 
+        A **long document** adds a position view. **Topics** shows where the selected topic
+        occurs in the text. **Documents** shows the topic share through the whole text.
+
         Start in **Topics**. Read the terms of a topic. Give the topic a name. Then go to Step 4
         and export your results.
         """
@@ -1080,6 +1160,9 @@ def _(
 
                 **Dominant score.** The score of the strongest topic of one document. A low score
                 means that the document fits no topic well.
+
+                **Segment.** One piece of a long document, such as a paragraph. Its number is
+                its position in the text.
 
                 **Topic diversity.** The share of top terms that occur in one topic only. A low
                 value means that the topics repeat each other.

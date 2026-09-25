@@ -26,8 +26,11 @@ __all__ = [
     "group_share_frame",
     "group_stacked_bars",
     "parse_dates",
+    "position_frame",
+    "position_heatmap",
     "prevalence_bars",
     "representative_documents",
+    "representative_passages",
     "score_histogram",
     "similarity_heatmap",
     "similarity_long_frame",
@@ -39,6 +42,7 @@ __all__ = [
     "topic_cards",
     "topic_map",
     "topic_map_frame",
+    "topic_position_area",
     "word_cloud_png",
 ]
 
@@ -50,6 +54,12 @@ EMPTY_STATE = "No data to show yet."
 
 SNIPPET_LENGTH = 220
 """`SPECS.md` section 8 shows a snippet in a table, never the full text."""
+
+POSITION_COLUMNS = 300
+"""The position heatmap averages neighbouring segments into this many columns at most."""
+
+POSITION_TICKS = 12
+"""The position heatmap labels about this many columns, so the labels never overlap."""
 
 
 def snippet(text: str, length: int = SNIPPET_LENGTH) -> str:
@@ -546,4 +556,159 @@ def score_histogram(frame: pd.DataFrame) -> alt.Chart:
             tooltip=[alt.Tooltip("count()", title="Documents")],
         )
         .properties(height=260)
+    )
+
+
+def _segment_numbers(result: TopicModelResult) -> np.ndarray:
+    """Return the 1-based source position of each modelled document.
+
+    A long document carries a `segment_number` column. Any other corpus falls back to the row
+    order, which is the import order.
+
+    >>> from simple_topic_modeling.result import _example_result
+    >>> _segment_numbers(_example_result()).tolist()
+    [1, 2, 3]
+    """
+    if "segment_number" in result.metadata.columns:
+        return result.metadata["segment_number"].to_numpy(dtype=int)
+    return np.arange(1, result.n_documents + 1)
+
+
+def position_frame(result: TopicModelResult, max_columns: int = POSITION_COLUMNS) -> pd.DataFrame:
+    """Build the topic share at each position of a long document, in long form.
+
+    Each row holds one position and one topic. Above `max_columns` segments, the frame averages
+    neighbouring segments into one column, so a book stays readable and the chart stays small.
+    `segment_start` and `segment_end` name the segments that a column covers.
+
+    >>> from simple_topic_modeling.result import _example_result
+    >>> frame = position_frame(_example_result())
+    >>> frame.columns.tolist()
+    ['segment_start', 'segment_end', 'topic_id', 'topic', 'share']
+    >>> len(frame)
+    6
+    >>> binned = position_frame(_example_result(), max_columns=2)
+    >>> binned["segment_start"].unique().tolist(), binned["segment_end"].unique().tolist()
+    ([1, 3], [2, 3])
+    >>> binned[binned["segment_start"] == 1]["share"].round(2).tolist()
+    [0.5, 0.5]
+    """
+    numbers = _segment_numbers(result)
+    order = np.argsort(numbers, kind="stable")
+    groups = np.array_split(order, min(max_columns, len(order)))
+    rows = []
+    for group in groups:
+        means = result.document_topic[group].mean(axis=0)
+        for topic_id, value in enumerate(means):
+            rows.append(
+                {
+                    "segment_start": int(numbers[group].min()),
+                    "segment_end": int(numbers[group].max()),
+                    "topic_id": topic_id,
+                    "topic": result.topic_names[topic_id],
+                    "share": float(value),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def position_heatmap(frame: pd.DataFrame, topic_names: list[str]) -> alt.Chart:
+    """Show where each topic occurs in a long document.
+
+    The x-axis is the position in the source. The y-axis lists the topics in topic order. A darker
+    cell means a larger topic share.
+
+    >>> from simple_topic_modeling.result import _example_result
+    >>> example = _example_result()
+    >>> spec = position_heatmap(position_frame(example), example.topic_names).to_dict()
+    >>> spec["mark"]["type"]
+    'rect'
+    >>> spec["encoding"]["x"]["field"]
+    'segment_start'
+    >>> spec["encoding"]["x"]["axis"]["values"]
+    [1, 2, 3]
+    """
+    starts = sorted(frame["segment_start"].unique().tolist())
+    ticks = starts[:: max(1, len(starts) // POSITION_TICKS)]
+    return (
+        alt.Chart(frame, title="Topic share through the document")
+        .mark_rect()
+        .encode(
+            x=alt.X(
+                "segment_start:O",
+                title="Segment (position in the source)",
+                axis=alt.Axis(values=ticks, labelAngle=0),
+            ),
+            y=alt.Y("topic:N", title=None, sort=topic_names),
+            color=alt.Color(
+                "share:Q",
+                title="Topic share",
+                scale=alt.Scale(scheme="blues"),
+                legend=alt.Legend(format="%"),
+            ),
+            tooltip=[
+                alt.Tooltip("segment_start:Q", title="From segment"),
+                alt.Tooltip("segment_end:Q", title="To segment"),
+                alt.Tooltip("topic:N", title="Topic"),
+                alt.Tooltip("share:Q", title="Share", format=".1%"),
+            ],
+        )
+        .properties(width=700, height=alt.Step(22))
+    )
+
+
+def topic_position_area(frame: pd.DataFrame, topic: int) -> alt.Chart:
+    """Draw the share of one topic along a long document.
+
+    >>> from simple_topic_modeling.result import _example_result
+    >>> chart = topic_position_area(position_frame(_example_result()), 0)
+    >>> chart.to_dict()["mark"]["type"]
+    'area'
+    >>> len(chart.data)
+    3
+    """
+    selected = frame[frame["topic_id"] == topic]
+    return (
+        alt.Chart(selected, title="Where this topic occurs")
+        .mark_area(opacity=0.7, line=True, interpolate="step-after")
+        .encode(
+            x=alt.X("segment_start:Q", title="Segment (position in the source)"),
+            y=alt.Y("share:Q", title="Topic share", axis=alt.Axis(format="%")),
+            tooltip=[
+                alt.Tooltip("segment_start:Q", title="From segment"),
+                alt.Tooltip("segment_end:Q", title="To segment"),
+                alt.Tooltip("share:Q", title="Share", format=".1%"),
+            ],
+        )
+        .properties(width=700, height=180)
+    )
+
+
+def representative_passages(result: TopicModelResult, topic: int, count: int = 10) -> pd.DataFrame:
+    """Rank the passages of a long document by their score for one topic.
+
+    The table names the position of each passage, so a reader can find it in the source. The
+    dominant topic of a passage can differ from the selected topic.
+
+    >>> from simple_topic_modeling.result import _example_result
+    >>> frame = representative_passages(_example_result(), 0, count=2)
+    >>> frame.columns.tolist()
+    ['segment_number', 'dominant_topic', 'dominant_score', 'score', 'snippet']
+    >>> frame["segment_number"].tolist()
+    [1, 3]
+    """
+    ranked = representative_documents(result, topic, count)
+    rows = {document_id: row for row, document_id in enumerate(result.document_ids)}
+    positions = [rows[document_id] for document_id in ranked["document_id"]]
+    numbers = _segment_numbers(result)
+    return pd.DataFrame(
+        {
+            "segment_number": [int(numbers[row]) for row in positions],
+            "dominant_topic": [result.topic_names[result.dominant_topic[row]] for row in positions],
+            "dominant_score": [
+                round(float(result.dominant_topic_score[row]), 4) for row in positions
+            ],
+            "score": ranked["score"].tolist(),
+            "snippet": ranked["snippet"].tolist(),
+        }
     )

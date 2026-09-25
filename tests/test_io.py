@@ -38,7 +38,7 @@ def test_extension_maps_to_the_right_reader(name, kind):
     assert detect_kind(name) == kind
 
 
-@pytest.mark.parametrize("name", ["a.pdf", "a.docx", "a.zip", "a.png", "a.mp4"])
+@pytest.mark.parametrize("name", ["a.docx", "a.zip", "a.png", "a.mp4"])
 def test_known_binary_extensions_are_rejected(name):
     with pytest.raises(UnsupportedFileError):
         decode_text(UploadedFile(name, b"anything"))

@@ -6,7 +6,9 @@ Every message in this module carries both. `app.py` renders them with one functi
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 __all__ = [
     "ConfigFileError",
@@ -14,6 +16,8 @@ __all__ = [
     "EmptyVocabularyError",
     "FriendlyMessage",
     "NoUsableTextError",
+    "PdfProblem",
+    "PdfTextError",
     "TooFewDocumentsError",
     "TooManyTopicsError",
     "TopicError",
@@ -21,10 +25,17 @@ __all__ = [
     "browser_failure",
     "date_parsing_failed",
     "model_did_not_converge",
+    "pdf_pages_without_text",
 ]
 
 MIN_DOCUMENTS = 3
 """Smallest corpus that a topic model can use."""
+
+PdfProblem = Literal["no_text", "encrypted", "damaged"]
+"""Why the app cannot take the text of a PDF."""
+
+LISTED_PAGES = 10
+"""A notice names this many pages at most."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,17 +79,55 @@ class TopicError(Exception):
 class UnsupportedFileError(TopicError):
     """The file is binary, or the app cannot read its format.
 
-    >>> UnsupportedFileError("report.pdf").friendly.detail
-    'The file "report.pdf" is not readable text.'
+    >>> UnsupportedFileError("report.docx").friendly.detail
+    'The file "report.docx" is not readable text.'
     """
 
     def __init__(self, filename: str) -> None:
         super().__init__(
             FriendlyMessage(
                 f'The file "{filename}" is not readable text.',
-                "Upload CSV, TSV, JSON, JSONL, or a plain-text file such as TXT or Markdown.",
+                "Upload CSV, TSV, JSON, JSONL, a text-based PDF, or a plain-text file such as TXT"
+                " or Markdown.",
             )
         )
+
+
+class PdfTextError(TopicError):
+    """The app cannot take the text of a PDF.
+
+    A scanned PDF holds images of text, not text. The app does no OCR, so the message names the
+    way out. The app does not support a password either, as issue #27 decided.
+
+    >>> PdfTextError("scan.pdf", "no_text").friendly.detail
+    'The PDF "scan.pdf" does not contain enough extractable text.'
+    >>> PdfTextError("scan.pdf", "no_text").friendly.recovery
+    'OCR is not currently supported. Convert it to a searchable PDF or text file and try again.'
+    >>> PdfTextError("secret.pdf", "encrypted").friendly.detail
+    'The PDF "secret.pdf" is protected by a password.'
+    >>> PdfTextError("broken.pdf", "damaged").problem
+    'damaged'
+    """
+
+    def __init__(self, filename: str, problem: PdfProblem) -> None:
+        messages: dict[PdfProblem, FriendlyMessage] = {
+            "no_text": FriendlyMessage(
+                f'The PDF "{filename}" does not contain enough extractable text.',
+                "OCR is not currently supported. Convert it to a searchable PDF or text file and"
+                " try again.",
+            ),
+            "encrypted": FriendlyMessage(
+                f'The PDF "{filename}" is protected by a password.',
+                "The app does not open a protected PDF. Remove the password, or save the text as"
+                " a TXT file, and try again.",
+            ),
+            "damaged": FriendlyMessage(
+                f'The app cannot read the PDF "{filename}".',
+                "Save the PDF again, or save its text as a TXT file, and try again.",
+            ),
+        }
+        super().__init__(messages[problem])
+        self.problem = problem
 
 
 class ConfigFileError(TopicError):
@@ -200,6 +249,28 @@ def date_parsing_failed(unparsed: int, total: int) -> FriendlyMessage:
     return FriendlyMessage(
         f"The app could not read {unparsed} of {total} dates.",
         "Choose a different date column, or use the ISO format YYYY-MM-DD.",
+    )
+
+
+def pdf_pages_without_text(filename: str, pages: Sequence[int], page_count: int) -> FriendlyMessage:
+    """Report the pages of a PDF that hold no text.
+
+    The app models the other pages. A long list names the first pages only.
+
+    >>> pdf_pages_without_text("book.pdf", [3], 12).detail
+    'The app found no text on 1 of 12 pages of "book.pdf": page 3.'
+    >>> pdf_pages_without_text("book.pdf", range(1, 15), 20).detail
+    'The app found no text on 14 of 20 pages of "book.pdf":
+     pages 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, and 4 more.'
+    """
+    shown = ", ".join(str(page) for page in list(pages)[:LISTED_PAGES])
+    extra = len(pages) - LISTED_PAGES
+    listed = f"{shown}, and {extra} more" if extra > 0 else shown
+    noun = "page" if len(pages) == 1 else "pages"
+    return FriendlyMessage(
+        f'The app found no text on {len(pages)} of {page_count} pages of "{filename}":'
+        f" {noun} {listed}.",
+        "A scanned page needs OCR, which the app does not support. The app models the other pages.",
     )
 
 

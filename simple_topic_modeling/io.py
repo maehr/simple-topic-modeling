@@ -1,8 +1,8 @@
 """Corpus import.
 
-`SPECS.md` section 2 accepts structured tables and generic UTF-8 text. This module decodes bytes,
-parses the structured formats, strips markup, splits a single file into documents, and reports the
-corpus statistics.
+`SPECS.md` section 2 accepts structured tables, generic UTF-8 text, and text-based PDF files. This
+module decodes bytes, parses the structured formats, extracts the text of a PDF, strips markup,
+splits a single file into documents, and reports the corpus statistics.
 """
 
 from __future__ import annotations
@@ -19,19 +19,25 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+from pypdf import PdfReader
+from pypdf.errors import DependencyError
 
 from simple_topic_modeling.config import SplitMode
 from simple_topic_modeling.errors import (
     DecodeError,
     FriendlyMessage,
     NoUsableTextError,
+    PdfTextError,
     UnsupportedFileError,
+    pdf_pages_without_text,
 )
 
 __all__ = [
+    "MIN_PDF_CHARACTERS",
     "Corpus",
     "CorpusStats",
     "FileKind",
+    "PdfExtraction",
     "SplitMode",
     "UploadedFile",
     "build_corpus",
@@ -40,8 +46,10 @@ __all__ = [
     "decode_text",
     "demo_table",
     "detect_kind",
+    "extract_pdf_text",
     "normalize_whitespace",
     "read_table",
+    "read_text_document",
     "sample_corpus",
     "split_long_document",
     "split_text",
@@ -61,8 +69,12 @@ _TABLE_EXTENSIONS: dict[str, FileKind] = {
 _MARKUP_EXTENSIONS = frozenset({".html", ".htm", ".xml"})
 _MARKDOWN_EXTENSIONS = frozenset({".md", ".markdown"})
 _BINARY_EXTENSIONS = frozenset(
-    {".pdf", ".docx", ".doc", ".xlsx", ".zip", ".png", ".jpg", ".jpeg", ".gif", ".mp3", ".mp4"}
+    {".docx", ".doc", ".xlsx", ".zip", ".png", ".jpg", ".jpeg", ".gif", ".mp3", ".mp4"}
 )
+_PDF_EXTENSION = ".pdf"
+
+MIN_PDF_CHARACTERS = 100
+"""A PDF with fewer visible characters than this counts as scanned. A model needs more text."""
 
 _BLANK_LINES = re.compile(r"\n\s*\n")
 _INLINE_SPACE = re.compile(r"[^\S\n]+")
@@ -170,7 +182,7 @@ def decode_text(file: UploadedFile) -> str:
 
     >>> decode_text(UploadedFile("a.txt", b"caf\xc3\xa9"))
     'café'
-    >>> decode_text(UploadedFile("a.pdf", b"%PDF-1.4"))
+    >>> decode_text(UploadedFile("a.docx", b"PK"))
     Traceback (most recent call last):
     simple_topic_modeling.errors.UnsupportedFileError: ...
     >>> decode_text(UploadedFile("a.txt", b"\xff\xfe\x00bad"))
@@ -249,6 +261,150 @@ def strip_markup(text: str, filename: str) -> str:
         text = _MARKDOWN_NOISE.sub(" ", text)
         text = _MARKDOWN_INLINE.sub(r"\1", text)
     return normalize_whitespace(text)
+
+
+@dataclass(frozen=True, slots=True)
+class PdfExtraction:
+    """The text of one PDF, and the pages that held no text.
+
+    >>> extraction = PdfExtraction("book.pdf", "Some text.", 3, (2,))
+    >>> extraction.notice.detail
+    'The app found no text on 1 of 3 pages of "book.pdf": page 2.'
+    >>> PdfExtraction("book.pdf", "Some text.", 3, ()).notice is None
+    True
+    """
+
+    name: str
+    text: str
+    page_count: int
+    pages_without_text: tuple[int, ...]
+
+    @property
+    def notice(self) -> FriendlyMessage | None:
+        """Warn about the pages without text, or return `None` when every page held text.
+
+        >>> PdfExtraction("a.pdf", "x", 1, ()).notice is None
+        True
+        """
+        if not self.pages_without_text:
+            return None
+        return pdf_pages_without_text(self.name, self.pages_without_text, self.page_count)
+
+
+def _pdf_string(text: str) -> str:
+    r"""Escape a line for a PDF string literal.
+
+    >>> _pdf_string("a (b) \\ c")
+    'a \\(b\\) \\\\ c'
+    """
+    return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def _example_pdf(pages: Sequence[str]) -> bytes:
+    r"""Build a small PDF with one page per string, for the doctests and the tests.
+
+    An empty string makes a page without text, like a scanned page. The builder writes the bytes
+    by hand, so the tests need no PDF library besides pypdf and no binary file in git.
+
+    >>> _example_pdf(["Hello"])[:8]
+    b'%PDF-1.4'
+    >>> len(PdfReader(io.BytesIO(_example_pdf(["a", "", "b"]))).pages)
+    3
+    """
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    kids = []
+    for text in pages:
+        lines = [f"({_pdf_string(line)}) Tj T*" for line in text.split("\n")] if text else []
+        stream = f"BT /F1 12 Tf 14 TL 72 720 Td {' '.join(lines)} ET".encode("latin-1")
+        objects.append(b"<< /Length %d >>\nstream\n%s\nendstream" % (len(stream), stream))
+        objects.append(
+            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]"
+            b" /Resources << /Font << /F1 3 0 R >> >> /Contents %d 0 R >>" % len(objects)
+        )
+        kids.append(f"{len(objects)} 0 R")
+    objects[1] = f"<< /Type /Pages /Kids [{' '.join(kids)}] /Count {len(kids)} >>".encode()
+    body = b"%PDF-1.4\n"
+    offsets = []
+    for number, content in enumerate(objects, start=1):
+        offsets.append(len(body))
+        body += b"%d 0 obj\n%s\nendobj\n" % (number, content)
+    table = b"".join(b"%010d 00000 n \n" % offset for offset in offsets)
+    return (
+        body
+        + b"xref\n0 %d\n0000000000 65535 f \n" % (len(objects) + 1)
+        + table
+        + b"trailer\n<< /Size %d /Root 1 0 R >>\n" % (len(objects) + 1)
+        + b"startxref\n%d\n%%%%EOF\n" % len(body)
+    )
+
+
+def extract_pdf_text(file: UploadedFile) -> PdfExtraction:
+    r"""Extract the text of a PDF, page by page, in the browser or in CPython.
+
+    pypdf is pure Python, so the same code runs under Pyodide and under the tests. A blank line
+    separates two pages, so a page always starts a new paragraph. A page without text is skipped
+    and reported. A PDF with too little text, a password, or a damaged structure raises
+    `PdfTextError`.
+
+    >>> text = "First paragraph of the report, long enough to count as real text for the model."
+    >>> extraction = extract_pdf_text(UploadedFile("r.pdf", _example_pdf([text, "", text])))
+    >>> extraction.page_count, extraction.pages_without_text
+    (3, (2,))
+    >>> extraction.text.count("\n\n")
+    1
+    >>> extract_pdf_text(UploadedFile("scan.pdf", _example_pdf(["", ""])))
+    Traceback (most recent call last):
+    simple_topic_modeling.errors.PdfTextError: The PDF "scan.pdf" does not contain ...
+    >>> extract_pdf_text(UploadedFile("broken.pdf", b"not a pdf"))
+    Traceback (most recent call last):
+    simple_topic_modeling.errors.PdfTextError: The app cannot read the PDF "broken.pdf". ...
+    """
+    try:
+        reader = PdfReader(io.BytesIO(file.data))
+        # A PDF with an owner password only opens with the empty user password. Any other
+        # password is out of scope, as issue #27 decided.
+        if reader.is_encrypted and not reader.decrypt(""):
+            raise PdfTextError(file.name, "encrypted")
+        pages = [normalize_whitespace(page.extract_text() or "") for page in reader.pages]
+    except PdfTextError:
+        raise
+    except DependencyError as error:
+        # pypdf needs an extra crypto package for AES. The app does not ship one.
+        raise PdfTextError(file.name, "encrypted") from error
+    except Exception as error:
+        # A damaged file can fail anywhere inside the parser, so every other failure maps to
+        # one message.
+        raise PdfTextError(file.name, "damaged") from error
+    text = "\n\n".join(page for page in pages if page)
+    if len("".join(text.split())) < MIN_PDF_CHARACTERS:
+        raise PdfTextError(file.name, "no_text")
+    empty = tuple(number for number, page in enumerate(pages, start=1) if not page)
+    return PdfExtraction(file.name, text, len(pages), empty)
+
+
+def read_text_document(file: UploadedFile) -> tuple[str, FriendlyMessage | None]:
+    """Read one text-like file, and return its readable text with an optional notice.
+
+    A PDF goes to `extract_pdf_text`. Any other file goes through `decode_text` and
+    `strip_markup`.
+
+    >>> read_text_document(UploadedFile("a.md", b"# Title"))
+    ('Title', None)
+    >>> page = "A page of a report. " * 10
+    >>> text, notice = read_text_document(UploadedFile("r.PDF", _example_pdf([page, ""])))
+    >>> text.startswith("A page of a report.")
+    True
+    >>> notice.detail
+    'The app found no text on 1 of 2 pages of "r.PDF": page 2.'
+    """
+    if file.suffix == _PDF_EXTENSION:
+        extraction = extract_pdf_text(file)
+        return extraction.text, extraction.notice
+    return strip_markup(decode_text(file), file.name), None
 
 
 def split_text(text: str, mode: SplitMode) -> list[str]:

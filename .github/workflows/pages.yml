@@ -43,6 +43,10 @@ jobs:
       - name: Export the app
         run: uv run marimo export html-wasm app.py -o dist --mode run
 
+      # marimo cannot configure the default description, the manifests, or the icons.
+      - name: Brand the site
+        run: uv run python scripts/brand_site.py dist
+
       # The wheel file name carries the version. A stale name passes every
       # test and then fails in the browser with ModuleNotFoundError.
       - name: Check the published files
@@ -54,6 +58,10 @@ jobs:
               exit 1
             fi
           done
+          if grep -il '"marimo"\|a marimo app' dist/index.html dist/manifest.json dist/site.webmanifest; then
+            echo "The site still carries marimo branding."
+            exit 1
+          fi
           echo "Every file that the app needs is present."
 
       - name: Upload the site artifact

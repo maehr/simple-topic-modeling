@@ -13,7 +13,6 @@ The versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Version 2 replaces version 1, which was a Streamlit app that ran through stlite. The two share
 no code. Version 1 stays at the tag `v1.0.0` and the branch `legacy/streamlit`, and it receives no
 further work.
-
 """
 body = """
 {% if version -%}
@@ -30,6 +29,9 @@ body = """
 """
 footer = ""
 trim = true
+# `trim` also removes the blank line between two releases. git-cliff runs the postprocessor on
+# each release, so it puts the blank line back above each release heading.
+postprocessors = [{ pattern = '^## \[', replace = "\n## [" }]
 
 [git]
 conventional_commits = true

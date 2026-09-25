@@ -112,6 +112,8 @@ For one plain-text file, offer:
 
 For HTML/XML, strip tags before modelling. For Markdown and other markup, keep readable text and remove obvious syntax where practical without introducing heavy parser dependencies.
 Keep the line breaks, so the split still finds the paragraphs.
+In HTML and XML, a block element such as `p`, `div`, `li`, or a heading starts a new paragraph.
+A `br` element starts a new line.
 
 #### PDF import
 
@@ -608,6 +610,8 @@ corpus and `config.json`.
 
 Requirements:
 
+- Write `config.json` from the settings of the fitted result, never from the live controls. A
+  control that changed after the run must not describe files that the run did not make.
 - Fix the random seed. Store it in `config.json`. Show it in the advanced settings, so a reader can
   change it and see how stable the topics are.
 - Stamp `app_version` from the installed package metadata, never from a literal. A file from

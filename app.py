@@ -82,10 +82,11 @@ def _(mo):
         """
     # Simple Topic Modeling
 
-    This app finds the themes in a collection of documents.
+    This app finds the themes in a collection of documents, or in one long text such as a book.
 
     You get a list of topics. Each topic holds the words that occur together, the share of the
-    corpus that the topic covers, and the documents that match it.
+    corpus that the topic covers, and the documents that match it. For one long text, the app
+    also shows where each topic occurs, from the first paragraph to the last.
 
     A run takes a few seconds for a few hundred documents.
 
@@ -116,7 +117,8 @@ def _(mo):
         {
             "How to use this tool": mo.md(
                 """
-            1. **Add data.** Use the demo corpus, or load your own documents.
+            1. **Add data.** Use the demo corpus, or load your own documents. You can also load
+               one long text, such as a book, and choose **Analyse as: Long document**.
             2. **Configure.** Set the language, then set the number of topics.
             3. **Run the model.** Select **Run model**. The app fits the model in this browser.
             4. **Explore and export.** Read each topic, name it, then download the results.
@@ -139,6 +141,19 @@ def _(mo):
 
             The model does not know what a topic means. You read the terms and the documents. Then
             you give the topic a name.
+            """
+            ),
+            "Can I analyse one long text?": mo.md(
+                """
+            Yes. A topic model needs many documents, so the app splits one long text into
+            **segments**, usually its paragraphs. Each segment counts as one document.
+
+            In **Long document** mode, each segment keeps its number, which is its position in the
+            text. The results then show where each topic occurs, and which passages represent it
+            best. Use this mode for a book, a thesis, a report, or a transcript.
+
+            In **Corpus document** mode, the segments are unrelated documents, and their order is
+            lost.
             """
             ),
         }
@@ -993,14 +1008,17 @@ def _(
         # The fitted result, not the live control, decides the mode. A changed control only
         # raises the "Configuration changed" banner until the next run.
         _long = display_result.config.get("analyse_as") == "long_document"
+        _unit = "segments" if _long else "documents"
         if _long:
             _positions = plots.position_frame(display_result)
+            # Empty paragraphs and sampling leave gaps, so the row count is not the last position.
+            _last = int(display_result.metadata["segment_number"].max())
             _examples = [
                 mo.ui.altair_chart(plots.topic_position_area(_positions, _index)),
                 mo.md("### Representative passages"),
                 mo.md(
                     "*The segment number is the position of the passage in the source. Segment 1"
-                    f" opens the text. Segment {display_result.n_documents} is the last one"
+                    f" opens the text. Segment {_last} is the last one"
                     " that the model used.*"
                 ),
                 mo.ui.table(plots.representative_passages(display_result, _index), selection=None),
@@ -1022,8 +1040,9 @@ def _(
             [
                 topic_select,
                 mo.md(
-                    f"**Prevalence:** {display_result.topic_prevalence[_index]:.1%} of the corpus"
-                    f" · **{display_result.n_documents}** documents modelled"
+                    f"**Prevalence:** {display_result.topic_prevalence[_index]:.1%} of the"
+                    f" {'text' if _long else 'corpus'}"
+                    f" · **{display_result.n_documents}** {_unit} modelled"
                 ),
                 mo.ui.altair_chart(plots.top_term_bars(display_result, _index)),
                 mo.image(plots.word_cloud_png(display_result, _index), width=700),
@@ -1031,10 +1050,10 @@ def _(
                 mo.accordion(
                     {
                         "How to read a topic": mo.md(
-                            """
-                        Read the top terms together with several high-scoring documents. The
-                        keywords are clues, not a full definition. Rename the topic once its
-                        meaning is clear to you.
+                            f"""
+                        Read the top terms together with several high-scoring
+                        {"passages" if _long else "documents"}. The keywords are clues, not a full
+                        definition. Rename the topic once its meaning is clear to you.
                         """
                         )
                     }
@@ -1056,7 +1075,7 @@ def _(
         _documents = _documents.reset_index(drop=True)
         if _documents.empty:
             _document_view = mo.callout(
-                mo.md("**No document matches these filters.** Widen them to see results."),
+                mo.md(f"**No {_unit[:-1]} matches these filters.** Widen them to see results."),
                 kind="warn",
             )
         else:
@@ -1075,9 +1094,7 @@ def _(
                     gap=2,
                     wrap=True,
                 ),
-                mo.md(
-                    f"**{len(_documents)}** of **{display_result.n_documents}** documents shown."
-                ),
+                mo.md(f"**{len(_documents)}** of **{display_result.n_documents}** {_unit} shown."),
                 _document_view,
             ]
         )
@@ -1157,15 +1174,22 @@ def _(
                 ),
             ]
         )
-        _orientation = mo.md(
+        _position_note = (
             """
+        This run analyses **one long document**. Each segment is one paragraph of the text, and
+        its number is its position. **Topics** shows where the selected topic occurs and lists
+        its representative passages. **Documents** shows the topic share through the whole text,
+        then lists the segments in their order.
+        """
+            if _long
+            else ""
+        )
+        _orientation = mo.md(
+            f"""
         **Overview** shows every topic at once. **Topics** opens one topic in detail.
-        **Documents** lists the documents of a topic. **Metadata** charts the topics against your
+        **Documents** lists the {_unit} of a topic. **Metadata** charts the topics against your
         own columns. **Diagnostics** describes the run.
-
-        A **long document** adds a position view. **Topics** shows where the selected topic
-        occurs in the text. **Documents** shows the topic share through the whole text.
-
+        {_position_note}
         Start in **Topics**. Read the terms of a topic. Give the topic a name. Then go to Step 4
         and export your results.
         """
@@ -1220,12 +1244,15 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(display_result, exports, include_text, mo, pending_config):
+def _(AppConfig, display_result, exports, include_text, mo):
     if display_result is None:
         _view = mo.md(
             "*No result yet. Go to **Step 3** and select **Run model** to unlock the downloads.*"
         )
     else:
+        # Export the settings of the fitted result, not the live controls. A changed control
+        # would otherwise describe a run that did not make these files.
+        _config = AppConfig.model_validate(display_result.config)
         _files = {
             "documents_topics.csv": exports.documents_topics_frame(
                 display_result, include_text.value
@@ -1245,7 +1272,7 @@ def _(display_result, exports, include_text, mo, pending_config):
         ]
         _buttons.append(
             mo.download(
-                data=exports.config_json(pending_config, display_result.topic_names),
+                data=exports.config_json(_config, display_result.topic_names),
                 filename="config.json",
                 label="config.json",
                 mimetype="application/json",
@@ -1253,7 +1280,7 @@ def _(display_result, exports, include_text, mo, pending_config):
         )
         _buttons.append(
             mo.download(
-                data=exports.project_zip(display_result, pending_config, include_text.value),
+                data=exports.project_zip(display_result, _config, include_text.value),
                 filename="project.zip",
                 label="project.zip",
                 mimetype="application/zip",

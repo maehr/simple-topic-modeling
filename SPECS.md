@@ -109,6 +109,40 @@ For one plain-text file, offer:
 - split by line.
 
 For HTML/XML, strip tags before modelling. For Markdown and other markup, keep readable text and remove obvious syntax where practical without introducing heavy parser dependencies.
+Keep the line breaks, so the split still finds the paragraphs.
+In HTML and XML, a block element such as `p`, `div`, `li`, or a heading starts a new paragraph.
+A `br` element starts a new line.
+
+#### Long-document mode
+
+A book, a thesis, a transcript, or a report is one long text. A topic model needs many
+observations, so the app splits the text into ordered segments. Each segment is one modelling
+document. The model stays a topic model over many segments. It never fits one unsplit text.
+
+When exactly one text is loaded, show **Analyse as**:
+
+- **Corpus document** — the default. The segments are unrelated documents. The app adds no
+  position metadata.
+- **Long document** — the segments keep their parent and their position.
+
+Both modes use the same split control and the same `split_text()` function. The default split is
+on blank lines, which gives one segment per paragraph.
+
+The split must:
+
+- keep the source order,
+- drop the empty segments before it numbers them,
+- give each segment a stable, 1-based ID: `book.txt#1`, `book.txt#2`, and so on.
+
+In long-document mode, each segment carries three metadata columns:
+
+| Column | Meaning |
+|---|---|
+| `parent_document_id` | the name of the source text |
+| `segment_index` | the 0-based position in the source |
+| `segment_number` | the 1-based position in the source |
+
+The order lives in these columns, not only in the ID. A sample keeps the order.
 
 Show:
 
@@ -388,6 +422,13 @@ For the selected topic:
 
 Representative documents are ranked by the selected topic score and show ID, score, snippet, and selected metadata.
 
+In long-document mode, the tab shows two more items:
+
+- **Where this topic occurs** — an area chart of the topic share along the segment number.
+- **Representative passages** — the table replaces the representative documents. Each row shows
+  the segment number, the dominant topic, the dominant score, the score of the selected topic,
+  and a snippet.
+
 > **Info box — How to read a topic**  
 > Look at the top terms together with several high-scoring documents. Topic keywords are clues, not a complete definition. Rename the topic once its meaning is clear to you.
 
@@ -400,6 +441,16 @@ Representative documents are ranked by the selected topic score and show ID, sco
 - topic filter,
 - minimum score filter,
 - metadata filters when available.
+
+In long-document mode, the tab opens with a **position heatmap**:
+
+- x-axis: the segment number, in source order,
+- y-axis: the topics, in topic order,
+- colour: the topic share, on one sequential blue scale.
+
+Above 300 segments, the heatmap averages neighbouring segments into 300 columns. The tooltip
+names the first and the last segment of each column. The table keeps the source order and shows
+the segment number, the dominant topic, and its score.
 
 ### Metadata
 
@@ -445,7 +496,7 @@ One row per modelled document:
 ```text
 document_id
 text                       # optional toggle
-<metadata columns>
+<metadata columns>         # parent_document_id, segment_index, segment_number in long-document mode
 dominant_topic_id
 dominant_topic_name
 dominant_topic_score
@@ -498,7 +549,12 @@ Include:
 - model and parameters,
 - preprocessing settings,
 - base/add/keep stop-word settings,
-- random seed.
+- random seed,
+- `analyse_as` (`corpus` or `long_document`),
+- `split_mode` (`whole`, `blank_lines`, `lines`, or `null` when the app did not split the input).
+
+A `config.json` without `analyse_as` or `split_mode` still loads. The two fields take their
+defaults: `corpus` and `null`.
 
 ### `project.zip`
 
@@ -522,13 +578,15 @@ corpus and `config.json`.
 
 Requirements:
 
+- Write `config.json` from the settings of the fitted result, never from the live controls. A
+  control that changed after the run must not describe files that the run did not make.
 - Fix the random seed. Store it in `config.json`. Show it in the advanced settings, so a reader can
   change it and see how stable the topics are.
 - Stamp `app_version` from the installed package metadata, never from a literal. A file from
   version 2 must report version 2.
 - Offer a download of the demo corpus while the demo is the active source.
-- Accept a `config.json` upload. Restore the language, the stop words, and every model parameter.
-  Name the loaded file and the version that wrote it.
+- Accept a `config.json` upload. Restore the language, the stop words, every model parameter, and
+  the split settings of one text. Name the loaded file and the version that wrote it.
 - Report a bad file with a recovery action. Keep the parsing in the package, never in the notebook,
   so the tests can cover it.
 - Let **Reset recommended defaults** discard a loaded configuration.

@@ -97,7 +97,8 @@ class PdfTextError(TopicError):
     """The app cannot take the text of a PDF.
 
     A scanned PDF holds images of text, not text. The app does no OCR, so the message names the
-    way out. The app does not support a password either, as issue #27 decided.
+    way out. The app opens a PDF with an owner password only, because such a file needs no password
+    to read. It rejects a PDF that needs a user password, as issue #27 decided.
 
     >>> PdfTextError("scan.pdf", "no_text").friendly.detail
     'The PDF "scan.pdf" does not contain enough extractable text.'

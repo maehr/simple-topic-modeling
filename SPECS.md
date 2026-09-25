@@ -139,7 +139,7 @@ Rules:
 PDF text rarely holds blank lines inside a page. A split on blank lines therefore gives about one
 segment per page.
 
-Out of scope: OCR, password-protected PDFs, images, figures, and page layout.
+Out of scope: OCR, PDFs that need a user password to open, images, figures, and page layout.
 
 The Pyodide kernel runs in a web worker, so a large PDF does not block the page. The kernel is busy
 until the extraction ends.

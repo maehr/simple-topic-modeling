@@ -152,6 +152,9 @@ def _(mo):
             text. The results then show where each topic occurs, and which passages represent it
             best. Use this mode for a book, a thesis, a report, or a transcript.
 
+            Load the text as one TXT, Markdown, HTML, or text-based PDF file, or paste it. One PDF
+            opens in this mode. A PDF segment is usually one page, not one paragraph.
+
             In **Corpus document** mode, the segments are unrelated documents, and their order is
             lost.
             """
@@ -204,7 +207,7 @@ def _(mo, source):
             PDF opens as a long document. A PDF rarely holds blank lines, so each page usually
             becomes one segment. A scanned PDF holds images, not text. The app does no OCR, so
             convert a scan to a searchable PDF first. The app does not open a PDF that needs a
-            password.
+            password to open.
 
             DOCX, images, and ZIP files are out of scope.
             """
@@ -1176,10 +1179,10 @@ def _(
         )
         _position_note = (
             """
-        This run analyses **one long document**. Each segment is one paragraph of the text, and
-        its number is its position. **Topics** shows where the selected topic occurs and lists
-        its representative passages. **Documents** shows the topic share through the whole text,
-        then lists the segments in their order.
+        This run analyses **one long document**. Each segment is one piece of the text, usually a
+        paragraph, or a page for a PDF. Its number is its position. **Topics** shows where the
+        selected topic occurs and lists its representative passages. **Documents** shows the topic
+        share through the whole text, then lists the segments in their order.
         """
             if _long
             else ""

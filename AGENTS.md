@@ -182,6 +182,30 @@ Prefix every cell-local variable with `_`. marimo requires a unique name across 
 `marimo edit app.py` runs local CPython. The exported `dist/` runs Pyodide in the browser. A change
 can pass one and fail the other. Always check both before you call the work done.
 
+### Brand the export
+
+The published site shows no marimo branding. Three marimo hooks reach a WASM export:
+
+* `app_title` sets `<title>`.
+* `css_file="web/app.css"` hides the "made with marimo" badge.
+* `html_head_file="web/head.html"` adds the description, the canonical URL, the Open Graph tags,
+  and the JSON-LD block.
+
+marimo 0.24.2 ignores `[tool.marimo.opengraph]` in `export html-wasm`. Only the server template
+reads it.
+
+The export still writes a default description, two web manifests, the marimo icons, and a
+`CLAUDE.md`. `scripts/brand_site.py` replaces or removes them. Run it after each export:
+
+```bash
+uv run python scripts/brand_site.py dist
+```
+
+Run it once per export only. It stops with an error when the marimo default description is
+missing. A marimo upgrade that changes the template then fails the `Notebook` job.
+
+`web/head.html` and `scripts/brand_site.py` both hold the description. Change both together.
+
 ### Fit only on the run button, and keep the last good result
 
 `SPECS.md` section 4 needs an explicit fit. `SPECS.md` section 8 needs the last good result to
@@ -259,9 +283,10 @@ The remote is `github.com/maehr/simple-topic-modeling`. The published app is
 Three workflows run:
 
 * `ci.yml` runs the section 4 gate in the `Gate` job. The `Notebook` job runs `marimo check` and
-  the `app.run()` check. The `dependency-review` job runs on a pull request only.
-* `pages.yml` builds the wheel, exports the app, and publishes `dist/`. It fails when the wheel
-  file name does not match the project version.
+  the `app.run()` check. It also exports and brands the app. The `dependency-review` job runs on a
+  pull request only.
+* `pages.yml` builds the wheel, exports and brands the app, and publishes `dist/`. It fails when
+  the wheel file name does not match the project version, or when marimo branding is left.
 * `codeql.yml` scans the Python code.
 
 Run the same gate locally before each commit. CI must give no surprise.

@@ -17,7 +17,12 @@
 import marimo
 
 __generated_with = "0.24.2"
-app = marimo.App(width="medium", app_title="Simple Topic Modeling")
+app = marimo.App(
+    width="medium",
+    app_title="Simple Topic Modeling",
+    css_file="web/app.css",
+    html_head_file="web/head.html",
+)
 
 
 @app.cell(hide_code=True)

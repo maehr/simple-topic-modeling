@@ -70,6 +70,27 @@ jobs:
           spec.loader.exec_module(module); module.app.run(); print('cells ok')
           "
 
+      - name: Test the brand script
+        run: uv run pytest --doctest-modules --no-cov scripts/brand_site.py
+
+      # A marimo upgrade can change the export template. Export and brand the app here, so the
+      # change fails on the pull request and not on the deploy from `main`.
+      - name: Build the package wheel
+        run: uv build --wheel -o public/wheels
+
+      - name: Export the app
+        run: uv run marimo export html-wasm app.py -o dist --mode run
+
+      - name: Brand the site
+        run: uv run python scripts/brand_site.py dist
+
+      - name: Check that no marimo branding is left
+        run: |
+          if grep -il '"marimo"\|a marimo app' dist/index.html dist/manifest.json dist/site.webmanifest; then
+            echo "The site still carries marimo branding."
+            exit 1
+          fi
+
   dependency-review:
     name: Dependency review
     # Only a pull request has a base to compare against.

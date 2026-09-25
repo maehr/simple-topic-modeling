@@ -1,0 +1,4 @@
+/* marimo adds a fixed "made with marimo" badge to an exported app. Hide it. */
+[data-testid="watermark"] {
+  display: none !important;
+}

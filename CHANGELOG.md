@@ -9,6 +9,18 @@ Version 2 replaces version 1, which was a Streamlit app that ran through stlite.
 no code. Version 1 stays at the tag `v1.0.0` and the branch `legacy/streamlit`, and it receives no
 further work.
 
+## [Unreleased]
+
+### Added
+
+- Add a long-document mode with a position view (#29)
+- Import text-based PDF files in the browser with pypdf (#30)
+- Remove marimo branding and add search metadata to the site
+
+### Build and tooling
+
+- Bump the actions-all group across 1 directory with 8 updates (#26)
+
 ## [2.0.0-alpha] - 2026-09-21
 
 ### Added
@@ -30,6 +42,7 @@ further work.
 
 - Scaffold project, tooling gate and WASM export path
 - Add the workflows, the health files and Dependabot
+- Ship version 2 as 2.0.0a0
 
 ### Changed
 

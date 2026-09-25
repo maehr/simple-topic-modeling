@@ -270,10 +270,12 @@ Write each commit message as a Conventional Commit. `cliff.toml` maps the commit
 group. Run this command after you commit:
 
 ```bash
-git-cliff --tag v2.0.0-alpha -o CHANGELOG.md
+git-cliff -o CHANGELOG.md
 ```
 
-Change the tag when you bump the version in `pyproject.toml`.
+This command puts each commit after the last tag under *Unreleased*. When you bump the version in
+`pyproject.toml`, add `--tag` with the new tag, for example `--tag v2.0.0-beta`. Do not pass a tag
+that already exists. git-cliff then writes a second section with the same version.
 
 ### The repository runs on GitHub
 

@@ -91,6 +91,24 @@ def test_an_uploaded_markdown_file_keeps_its_paragraphs():
     assert split_long_document(text, "book.md")[0] == ["Chapter", "Some bold text.", "a list"]
 
 
+def test_an_uploaded_html_file_keeps_its_paragraphs():
+    page = (
+        "<head><title>Book</title></head><h1>Chapter</h1>"
+        "<p>One <b>bold</b> line.<br/>Same paragraph.</p>\n<p>Two.</p>"
+    )
+    text = strip_markup(page, "book.html")
+    assert split_long_document(text, "book.html")[0] == [
+        "Chapter",
+        "One bold line.\nSame paragraph.",
+        "Two.",
+    ]
+
+
+def test_an_uploaded_tei_file_keeps_its_paragraphs():
+    text = strip_markup("<TEI><text><head>Title</head><p>a</p><p>b</p></text></TEI>", "ed.xml")
+    assert split_long_document(text, "ed.xml")[0] == ["Title", "a", "b"]
+
+
 def test_topic_modelling_treats_each_segment_as_a_document(long_result):
     assert long_result.n_documents == len(ANIMAL_TEXTS)
     assert long_result.config["analyse_as"] == "long_document"

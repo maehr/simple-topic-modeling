@@ -59,6 +59,46 @@ _TABLE_EXTENSIONS: dict[str, FileKind] = {
     ".ndjson": "jsonl",
 }
 _MARKUP_EXTENSIONS = frozenset({".html", ".htm", ".xml"})
+# A block element starts a new paragraph, so `split_text` can split an HTML page on blank lines.
+# The TEI names `head` and `lg` cover the most common XML edition format.
+_BLOCK_TAGS = frozenset(
+    {
+        "address",
+        "article",
+        "aside",
+        "blockquote",
+        "dd",
+        "div",
+        "dl",
+        "dt",
+        "figcaption",
+        "figure",
+        "footer",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "head",
+        "header",
+        "hr",
+        "lg",
+        "li",
+        "main",
+        "nav",
+        "ol",
+        "p",
+        "pre",
+        "section",
+        "table",
+        "td",
+        "th",
+        "tr",
+        "ul",
+    }
+)
+_SKIPPED_TAGS = frozenset({"script", "style", "title"})
 _MARKDOWN_EXTENSIONS = frozenset({".md", ".markdown"})
 _BINARY_EXTENSIONS = frozenset(
     {".pdf", ".docx", ".doc", ".xlsx", ".zip", ".png", ".jpg", ".jpeg", ".gif", ".mp3", ".mp4"}
@@ -186,7 +226,16 @@ def decode_text(file: UploadedFile) -> str:
 
 
 class _TagStripper(HTMLParser):
-    """Collect the text of an HTML or XML document and drop the tags."""
+    r"""Collect the text of an HTML or XML document and drop the tags.
+
+    A block element becomes a paragraph break. A `br` element becomes a line break. The page
+    title is metadata, not text, so the stripper drops it with the scripts and the styles.
+
+    >>> stripper = _TagStripper()
+    >>> stripper.feed("<p>one</p><p>two<br>three</p>")
+    >>> normalize_whitespace(" ".join(stripper.parts))
+    'one\n\ntwo\nthree'
+    """
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -194,14 +243,27 @@ class _TagStripper(HTMLParser):
         self._skip = 0
 
     def handle_starttag(self, tag: str, attrs: object) -> None:
-        """Start skipping the body of a script or style element."""
-        if tag in {"script", "style"}:
+        """Skip a script, style, or title element, and break the line at a block element."""
+        # HTMLParser reads a script or style body as raw text, and a title holds no tags, so no
+        # tag arrives while skipping.
+        if tag in _SKIPPED_TAGS:
             self._skip += 1
+        else:
+            self._break(tag)
 
     def handle_endtag(self, tag: str) -> None:
-        """Stop skipping at the end of a script or style element."""
-        if tag in {"script", "style"} and self._skip:
+        """Stop skipping at the end of a skipped element, and break the line at a block element."""
+        if tag in _SKIPPED_TAGS and self._skip:
             self._skip -= 1
+        elif tag != "br":
+            self._break(tag)
+
+    def _break(self, tag: str) -> None:
+        """Add a paragraph break for a block element and a line break for `br`."""
+        if tag in _BLOCK_TAGS:
+            self.parts.append("\n\n")
+        elif tag == "br":
+            self.parts.append("\n")
 
     def handle_data(self, data: str) -> None:
         """Keep the text of every element that is not skipped."""

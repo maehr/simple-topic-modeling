@@ -6,6 +6,7 @@
 #     "pandas",
 #     "pillow",
 #     "pydantic",
+#     "pypdf",
 #     "scikit-learn",
 #     "scipy",
 #     "wordcloud",
@@ -151,6 +152,9 @@ def _(mo):
             text. The results then show where each topic occurs, and which passages represent it
             best. Use this mode for a book, a thesis, a report, or a transcript.
 
+            Load the text as one TXT, Markdown, HTML, or text-based PDF file, or paste it. One PDF
+            opens in this mode. A PDF segment is usually one page, not one paragraph.
+
             In **Corpus document** mode, the segments are unrelated documents, and their order is
             lost.
             """
@@ -199,7 +203,13 @@ def _(mo, source):
             topic occurs in it. Load the one file, then choose **Analyse as: Long document**. The
             app splits the text into paragraphs and keeps their order.
 
-            PDF, DOCX, images, and ZIP files are out of scope.
+            Use a **text-based PDF** in the same way. The app reads the text in this browser. One
+            PDF opens as a long document. A PDF rarely holds blank lines, so each page usually
+            becomes one segment. A scanned PDF holds images, not text. The app does no OCR, so
+            convert a scan to a searchable PDF first. The app does not open a PDF that needs a
+            password to open.
+
+            DOCX, images, and ZIP files are out of scope.
             """
             )
         }
@@ -238,7 +248,10 @@ def _(TopicError, file_input, io, paste_input, source):
     text_documents = None
     text_names = None
     load_error = None
+    load_notices = []
 
+    # A PDF that fails raises here, so the message takes the existing load-error path. The fit
+    # state stays untouched, so the last result survives a bad PDF.
     try:
         if source.value == "Demo data":
             table = io.demo_table()
@@ -249,25 +262,33 @@ def _(TopicError, file_input, io, paste_input, source):
             if _tables:
                 table = io.read_table(_tables[0])
             elif _plain:
-                text_documents = [
-                    io.strip_markup(io.decode_text(item), item.name) for item in _plain
-                ]
+                _read = [io.read_text_document(item) for item in _plain]
+                text_documents = [text for text, _ in _read]
                 text_names = [item.name for item in _plain]
+                load_notices = [notice for _, notice in _read if notice is not None]
         elif paste_input.value.strip():
             text_documents = [paste_input.value]
             text_names = ["pasted text"]
     except TopicError as error:
         load_error = error.friendly
 
-    return load_error, table, text_documents, text_names
+    return load_error, load_notices, table, text_documents, text_names
 
 
 @app.cell(hide_code=True)
-def _(get_loaded, mo):
-    # These two controls apply to one text only. A loaded config.json restores them, so a reader
-    # splits the text exactly as the author did.
+def _(get_loaded, mo, text_names):
+    # These two controls apply to one text only. A loaded config.json from a run on one text
+    # restores them, so a reader splits the text exactly as the author did. Otherwise one PDF
+    # opens as a long document, and any other text opens as a corpus document.
     _loaded = get_loaded()
     _config = _loaded[0] if _loaded is not None else None
+    _one_pdf = (
+        text_names is not None and len(text_names) == 1 and text_names[0].lower().endswith(".pdf")
+    )
+    if _config is not None and _config.split_mode is not None:
+        _start_mode = _config.analyse_as
+    else:
+        _start_mode = "long_document" if _one_pdf else "corpus"
     _split_labels = {
         "whole": "Whole file is one document",
         "blank_lines": "Split on blank lines",
@@ -285,7 +306,7 @@ def _(get_loaded, mo):
     )
     analyse_as = mo.ui.radio(
         options={label: code for code, label in _mode_labels.items()},
-        value=_mode_labels[_config.analyse_as if _config is not None else "corpus"],
+        value=_mode_labels[_start_mode],
         label="Analyse as",
         inline=True,
     )
@@ -396,7 +417,7 @@ def _(
 
 
 @app.cell(hide_code=True)
-def _(corpus, corpus_error, load_error, mo, pd, stats):
+def _(corpus, corpus_error, load_error, load_notices, mo, pd, stats):
     _problem = load_error or corpus_error
     if _problem is not None:
         _view = mo.callout(mo.md(f"**{_problem.detail}** {_problem.recovery}"), kind="warn")
@@ -420,6 +441,10 @@ def _(corpus, corpus_error, load_error, mo, pd, stats):
         )
         _view = mo.vstack(
             [
+                *[
+                    mo.callout(mo.md(f"**{_note.detail}** {_note.recovery}"), kind="warn")
+                    for _note in load_notices
+                ],
                 mo.ui.table(_numbers, selection=None),
                 mo.md("**Preview**"),
                 mo.ui.table(_preview, selection=None),
@@ -1154,10 +1179,10 @@ def _(
         )
         _position_note = (
             """
-        This run analyses **one long document**. Each segment is one paragraph of the text, and
-        its number is its position. **Topics** shows where the selected topic occurs and lists
-        its representative passages. **Documents** shows the topic share through the whole text,
-        then lists the segments in their order.
+        This run analyses **one long document**. Each segment is one piece of the text, usually a
+        paragraph, or a page for a PDF. Its number is its position. **Topics** shows where the
+        selected topic occurs and lists its representative passages. **Documents** shows the topic
+        share through the whole text, then lists the segments in their order.
         """
             if _long
             else ""

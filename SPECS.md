@@ -81,7 +81,9 @@ Plain-text or markup files should use the generic text importer, including for e
 - `.yaml`, `.yml`
 - other UTF-8 text files regardless of extension
 
-Binary files such as PDF, DOCX, images, audio, and ZIP are out of scope for MVP.
+Text-based PDF files use the PDF importer. See **PDF import** below.
+
+Other binary files such as DOCX, images, audio, and ZIP are out of scope for MVP.
 
 For unknown extensions, attempt UTF-8 decoding. If successful, treat the file as text; otherwise show a clear unsupported/binary-file message.
 
@@ -113,6 +115,35 @@ Keep the line breaks, so the split still finds the paragraphs.
 In HTML and XML, a block element such as `p`, `div`, `li`, or a heading starts a new paragraph.
 A `br` element starts a new line.
 
+#### PDF import
+
+The app reads a `.pdf` file with [pypdf](https://pypdf.readthedocs.io/). pypdf is pure Python, so
+the same code runs under Pyodide in the browser and under CPython in the tests. The PDF bytes and
+the extracted text never leave the browser.
+
+Rules:
+
+- Route a `.pdf` file to the PDF extractor before UTF-8 decoding.
+- Extract the text page by page. Separate two pages with a blank line.
+- Skip a page without text. Show a warning that names the skipped pages. Model the other pages.
+- Reject a PDF with fewer than 100 visible characters as scanned. Show: *This PDF does not contain
+  enough extractable text. OCR is not currently supported. Convert it to a searchable PDF or text
+  file and try again.*
+- Open a PDF with an owner password only. Reject a PDF that needs a user password.
+- Reject a damaged PDF with a recovery action.
+- Report every failure on the load-error path. Never touch the fit state, so the last result
+  survives a bad PDF.
+- Open one PDF as a long document by default. The extracted text then takes the long-document path
+  below.
+
+PDF text rarely holds blank lines inside a page. A split on blank lines therefore gives about one
+segment per page.
+
+Out of scope: OCR, PDFs that need a user password to open, images, figures, and page layout.
+
+The Pyodide kernel runs in a web worker, so a large PDF does not block the page. The kernel is busy
+until the extraction ends.
+
 #### Long-document mode
 
 A book, a thesis, a transcript, or a report is one long text. A topic model needs many
@@ -121,9 +152,10 @@ document. The model stays a topic model over many segments. It never fits one un
 
 When exactly one text is loaded, show **Analyse as**:
 
-- **Corpus document** — the default. The segments are unrelated documents. The app adds no
-  position metadata.
-- **Long document** — the segments keep their parent and their position.
+- **Corpus document** — the default for a text file and for pasted text. The segments are
+  unrelated documents. The app adds no position metadata.
+- **Long document** — the default for one PDF. The segments keep their parent and their
+  position.
 
 Both modes use the same split control and the same `split_text()` function. The default split is
 on blank lines, which gives one segment per paragraph.
@@ -615,6 +647,8 @@ Required friendly errors:
 
 - unsupported/binary file,
 - text cannot be decoded,
+- PDF without enough text, PDF with a password, or damaged PDF,
+- PDF pages without text (a warning, not a failure),
 - no usable text,
 - too few documents,
 - empty vocabulary,
@@ -689,6 +723,7 @@ scikit-learn
 altair
 wordcloud
 Pillow
+pypdf
 ```
 
 ---

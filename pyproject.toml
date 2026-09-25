@@ -15,6 +15,10 @@ dependencies = [
     "pandas>=2.2",
     "pillow>=10.0",
     "pydantic>=2.7",
+    # Pyodide does not ship pypdf, so micropip installs the pure-Python wheel from PyPI. 3.1 is
+    # the first release of the current pypdf, which followed PyPDF2. It holds every API that
+    # io.py uses, and the test suite passes against it.
+    "pypdf>=3.1",
     "scikit-learn>=1.4",
     "scipy>=1.11",
     "wordcloud>=1.9",

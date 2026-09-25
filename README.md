@@ -92,13 +92,21 @@ Use a structured file when one row holds one document plus its metadata:
 Use a text file when the file itself is one document. The app reads any UTF-8 text file. It removes
 the tags from HTML and XML. It removes the common syntax from Markdown.
 
-The app rejects a binary file, such as a PDF file, a DOCX file, an image, or a ZIP archive.
+The app reads a text-based PDF file. It extracts the text in your browser with pypdf. One PDF opens
+as a long document. A PDF rarely holds blank lines, so each page usually becomes one segment.
+
+- A scanned PDF holds images, not text. The app does no OCR. Convert the scan to a searchable PDF or
+  to a text file first.
+- The app skips a page without text, and it names the skipped pages.
+- The app does not open a PDF that needs a password.
+
+The app rejects any other binary file, such as a DOCX file, an image, or a ZIP archive.
 
 ## Analyse one long document
 
 A book, a thesis, or a transcript is one long text. The app can show where each topic occurs in it.
 
-1. Load one text file, or paste one text.
+1. Load one text file or one PDF file, or paste one text.
 2. Set **Analyse as** to **Long document**.
 3. Keep **Split on blank lines**. The app then makes one segment from each paragraph.
 4. Select **Run model**.
@@ -110,7 +118,8 @@ Each segment is one document for the model. Each segment keeps its position in t
 - `documents_topics.csv` holds `parent_document_id`, `segment_index`, and `segment_number`, so you
   can rebuild the order of the text.
 
-**Corpus document** is the default. It splits the text the same way, but it treats the segments as
+**Corpus document** is the default for a text file. **Long document** is the default for a PDF.
+**Corpus document** splits the text the same way, but it treats the segments as
 unrelated documents.
 
 ## Languages
@@ -216,7 +225,7 @@ Pyodide needs.
 │   ├── config.py           the settings models
 │   ├── errors.py           one friendly message per failure
 │   ├── exports.py          the CSV, JSON, and ZIP files
-│   ├── io.py               the import, the split, and the corpus statistics
+│   ├── io.py               the import, the PDF text, the split, and the corpus statistics
 │   ├── metrics.py          the similarity, the diversity, and the notices
 │   ├── modeling.py         the vectorizer and the model fit
 │   ├── plots.py            the chart data and the chart specifications

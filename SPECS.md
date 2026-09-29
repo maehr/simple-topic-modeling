@@ -136,7 +136,7 @@ Rules:
 - Reject a damaged PDF with a recovery action.
 - Report every failure on the load-error path. Never touch the fit state, so the last result
   survives a bad PDF.
-- Open one PDF as a long document by default. The extracted text then takes the long-document path
+- Open one PDF as an ordered text by default. The extracted text then takes the ordered-text path
   below.
 
 PDF text rarely holds blank lines inside a page. A split on blank lines therefore gives about one
@@ -147,7 +147,7 @@ Out of scope: OCR, PDFs that need a user password to open, images, figures, and 
 The Pyodide kernel runs in a web worker, so a large PDF does not block the page. The kernel is busy
 until the extraction ends.
 
-#### Long-document mode
+#### Ordered-text mode
 
 A book, a thesis, a transcript, or a report is one long text. A topic model needs many
 observations, so the app splits the text into ordered segments. Each segment is one modelling
@@ -155,10 +155,15 @@ document. The model stays a topic model over many segments. It never fits one un
 
 When exactly one text is loaded, show **Analyse as**:
 
-- **Corpus document** — the default for a text file and for pasted text. The segments are
+- **Independent segments** — the default for a text file and for pasted text. The segments are
   unrelated documents. The app adds no position metadata.
-- **Long document** — the default for one PDF. The segments keep their parent and their
+- **Ordered text** — the default for one PDF. The segments keep their parent and their
   position.
+
+The stored values stay `corpus` and `long_document`, so a saved `config.json` still loads. Under
+the input summary, one line says what the model sees, for example `1 file → 327 paragraphs →
+analysed as an ordered text`. Pasted text reads `1 pasted text → …`. A PDF counts segments, not
+pages, because a page can hold more than one segment.
 
 Both modes use the same split control and the same `split_text()` function. The default split is
 on blank lines, which gives one segment per paragraph.
@@ -169,7 +174,7 @@ The split must:
 - drop the empty segments before it numbers them,
 - give each segment a stable, 1-based ID: `book.txt#1`, `book.txt#2`, and so on.
 
-In long-document mode, each segment carries three metadata columns:
+In ordered-text mode, each segment carries three metadata columns:
 
 | Column | Meaning |
 |---|---|
@@ -195,8 +200,8 @@ Configuration has two sections: **Language & cleaning** and **Model**.
 
 ### Step 3 — Run and explore
 
-Step 3 starts with the **Run** section. It holds the summary and **Run model**. See Run behavior.
-The tabs follow the **Run** section.
+Step 3 opens with the tabs. The **Run** heading, the summary, and **Run model** sit in a sidebar
+that stays in view while the page scrolls. See Run behavior.
 
 Tabs:
 
@@ -462,7 +467,7 @@ For the selected topic:
 
 Representative documents are ranked by the selected topic score and show ID, score, snippet, and selected metadata.
 
-In long-document mode, the tab shows two more items:
+In ordered-text mode, the tab shows two more items:
 
 - **Where this topic occurs** — an area chart of the topic share along the segment number.
 - **Representative passages** — the table replaces the representative documents. Each row shows
@@ -482,7 +487,7 @@ In long-document mode, the tab shows two more items:
 - minimum score filter,
 - metadata filters when available.
 
-In long-document mode, the tab opens with a **position heatmap**:
+In ordered-text mode, the tab opens with a **position heatmap**:
 
 - x-axis: the segment number, in source order,
 - y-axis: the topics, in topic order,

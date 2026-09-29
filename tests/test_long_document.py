@@ -196,3 +196,58 @@ def test_the_document_table_keeps_the_source_order(long_result):
     frame = plots.document_frame(long_result)
     assert frame["segment_number"].tolist() == list(range(1, len(ANIMAL_TEXTS) + 1))
     assert isinstance(frame, pd.DataFrame)
+
+
+def test_mode_labels_round_trip_and_keep_stored_values():
+    from simple_topic_modeling.config import MODE_LABELS, mode_from_label
+
+    assert set(MODE_LABELS) == {"corpus", "long_document"}
+    assert MODE_LABELS["corpus"] == "Independent segments"
+    assert MODE_LABELS["long_document"] == "Ordered text"
+    for value, label in MODE_LABELS.items():
+        assert mode_from_label(label) == value
+
+
+def test_unknown_mode_label_is_rejected():
+    from simple_topic_modeling.config import mode_from_label
+
+    with pytest.raises(ValueError, match="Unknown analysis mode"):
+        mode_from_label("Long document")
+
+
+def test_saved_config_with_old_values_still_loads():
+    assert AppConfig(analyse_as="long_document").analyse_as == "long_document"
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        (
+            (1, 327, "paragraph", "long_document"),
+            "1 file → 327 paragraphs → analysed as an ordered text",
+        ),
+        ((1, 1, "segment", "corpus"), "1 file → 1 segment → analysed as independent segments"),
+        (
+            (1, 12, "paragraph", "long_document", "pasted text"),
+            "1 pasted text → 12 paragraphs → analysed as an ordered text",
+        ),
+        ((2, 40, "line", "corpus"), "2 files → 40 lines → analysed as independent segments"),
+        (
+            (1, 9, "document", "corpus", "table"),
+            "1 table → 9 documents → analysed as independent segments",
+        ),
+    ],
+)
+def test_describe_analysis(args, expected):
+    from simple_topic_modeling.io import describe_analysis
+
+    assert describe_analysis(*args) == expected
+
+
+def test_segment_unit_follows_the_split_rule():
+    from simple_topic_modeling.io import segment_unit
+
+    assert segment_unit("blank_lines") == "paragraph"
+    assert segment_unit("blank_lines", is_pdf=True) == "segment"
+    assert segment_unit("lines", is_pdf=True) == "line"
+    assert segment_unit("whole") == "document"

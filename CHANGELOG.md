@@ -9,6 +9,35 @@ Version 2 replaces version 1, which was a Streamlit app that ran through stlite.
 no code. Version 1 stays at the tag `v1.0.0` and the branch `legacy/streamlit`, and it receives no
 further work.
 
+## [Unreleased]
+
+### Added
+
+- Add a long-document mode with a position view (#29)
+- Import text-based PDF files in the browser with pypdf (#30)
+- Add Run demo and Use my own data actions
+- Share one selected topic across views
+- Rerun from the configuration-changed notice
+- Rename single-document modes by intent
+
+### Build and tooling
+
+- Bump the actions-all group across 1 directory with 8 updates (#26)
+
+### Documentation
+
+- Add stack plan and update changelog
+
+### Fixed
+
+- Reject ambiguous multi-file uploads
+- Reject binary files before classifying an upload
+- Keep the model settings when the data source changes
+- Restore renaming and label the card buttons
+- Match the heatmap selection by topic id
+- Never give two topics the same name
+- Give the number to the topic that was renamed last
+- Name PDF segments and pasted text correctly
 ## [2.0.0-alpha] - 2026-09-21
 
 ### Added
@@ -30,6 +59,7 @@ further work.
 
 - Scaffold project, tooling gate and WASM export path
 - Add the workflows, the health files and Dependabot
+- Ship version 2 as 2.0.0a0
 
 ### Changed
 

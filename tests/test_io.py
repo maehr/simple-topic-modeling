@@ -195,6 +195,11 @@ def test_classify_uploads_no_files() -> None:
     assert classify_uploads([]).kind == "none"
 
 
+def test_classify_uploads_rejects_binary_extension() -> None:
+    with pytest.raises(UnsupportedFileError):
+        classify_uploads([_file("a.csv"), _file("report.docx")])
+
+
 def test_classify_uploads_one_table() -> None:
     plan = classify_uploads([_file("a.csv")])
     assert plan.kind == "table"

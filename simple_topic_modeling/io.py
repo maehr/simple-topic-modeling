@@ -241,6 +241,7 @@ def classify_uploads(files: Sequence[UploadedFile]) -> UploadPlan:
     """Decide how to read an upload: one table, text files, or nothing.
 
     The app accepts one table, or any number of text and PDF files. It rejects any other mix.
+    A known binary extension raises `UnsupportedFileError` before the app counts the files.
 
     >>> classify_uploads([]).kind
     'none'
@@ -255,7 +256,13 @@ def classify_uploads(files: Sequence[UploadedFile]) -> UploadPlan:
     'You uploaded 1 table and 1 text file. The app reads one table or text files, not both.'
     >>> plan.error.recovery
     'Upload one table, or upload only text and PDF files.'
+    >>> classify_uploads([UploadedFile("a.csv", b""), UploadedFile("b.docx", b"")])
+    Traceback (most recent call last):
+    simple_topic_modeling.errors.UnsupportedFileError: ...
     """
+    for item in files:
+        if item.suffix in _BINARY_EXTENSIONS:
+            raise UnsupportedFileError(item.name)
     tables = [item for item in files if detect_kind(item.name) != "text"]
     texts = [item for item in files if detect_kind(item.name) == "text"]
     if not files:

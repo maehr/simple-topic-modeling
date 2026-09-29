@@ -16,6 +16,7 @@ from simple_topic_modeling.plots import (
     snippet,
     top_term_bars,
     top_term_frame,
+    topic_card_html,
     topic_cards,
     topic_map,
     word_cloud_png,
@@ -244,3 +245,10 @@ def test_no_selection_dims_nothing(result):
         spec = _spec(chart)
         assert spec["encoding"]["fillOpacity"]["value"] == 0.85
         assert spec["encoding"]["strokeWidth"]["value"] == 0
+
+
+def test_topic_card_html_shows_a_custom_name_verbatim():
+    card = topic_card_html("**Finance** _y_ <i>z</i>", "a <b>", "12.5%", 3)
+    assert "<strong>**Finance** _y_ &lt;i&gt;z&lt;/i&gt;</strong><br>" in card
+    assert "a &lt;b&gt;<br>12.5% of the corpus · 3 documents" in card
+    assert "(selected)" not in card

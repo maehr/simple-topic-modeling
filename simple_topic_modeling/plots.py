@@ -6,6 +6,7 @@ later. Each function here is pure: it takes a result and returns a frame or an A
 
 from __future__ import annotations
 
+from html import escape
 from io import BytesIO
 from typing import TYPE_CHECKING, Any
 
@@ -39,6 +40,7 @@ __all__ = [
     "time_share_frame",
     "top_term_bars",
     "top_term_frame",
+    "topic_card_html",
     "topic_cards",
     "topic_map",
     "topic_map_frame",
@@ -98,6 +100,26 @@ def topic_cards(result: TopicModelResult, term_count: int = 5) -> pd.DataFrame:
             "prevalence": [f"{value:.1%}" for value in result.topic_prevalence],
             "documents": counts,
         }
+    )
+
+
+def topic_card_html(
+    topic: str, top_terms: str, prevalence: str, documents: int, selected: bool = False
+) -> str:
+    """Build the text of one topic card, with every value shown verbatim.
+
+    A reader can give a topic any name. Markdown would parse `**bold**` or `_italic_` in that
+    name, so this escapes each value instead. The wrapper carries the classes that marimo puts
+    around a Markdown cell, so the card keeps the Markdown style.
+
+    >>> print(topic_card_html("**Finance** & <b>x</b>", "a, b", "40.0%", 2, selected=True))
+    <span class="markdown prose dark:prose-invert contents"><p><strong>**Finance** &amp; &lt;b&gt;x&lt;/b&gt;</strong> (selected)<br>a, b<br>40.0% of the corpus · 2 documents</p></span>
+    """  # noqa: E501
+    marker = " (selected)" if selected else ""
+    return (
+        '<span class="markdown prose dark:prose-invert contents"><p>'
+        f"<strong>{escape(topic)}</strong>{marker}<br>{escape(top_terms)}<br>"
+        f"{escape(prevalence)} of the corpus · {documents} documents</p></span>"
     )
 
 

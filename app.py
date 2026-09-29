@@ -1169,10 +1169,11 @@ def _(
             _chosen = _row.topic_id == selected_index
             _card = mo.vstack(
                 [
-                    mo.md(
-                        f"**{_row.topic}**{' (selected)' if _chosen else ''}  \n"
-                        f"{_row.top_terms}  \n"
-                        f"{_row.prevalence} of the corpus · {_row.documents} documents"
+                    # A custom name can hold Markdown characters, so the card shows it verbatim.
+                    mo.Html(
+                        plots.topic_card_html(
+                            _row.topic, _row.top_terms, _row.prevalence, _row.documents, _chosen
+                        )
                     ),
                     card_buttons[_row.topic_id],
                 ],

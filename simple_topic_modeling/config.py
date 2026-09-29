@@ -260,6 +260,19 @@ class AppConfig(BaseModel):
         )
 
 
+def config_changed(result_config: dict[str, object] | None, pending: AppConfig) -> bool:
+    """Tell whether the settings differ from the ones that produced the shown result.
+
+    >>> config_changed(None, AppConfig())
+    False
+    >>> config_changed(AppConfig().model_dump(), AppConfig())
+    False
+    >>> config_changed(AppConfig().model_dump(), AppConfig(language="de"))
+    True
+    """
+    return result_config is not None and result_config != pending.model_dump()
+
+
 def load_app_config(payload: dict[str, object]) -> AppConfig:
     """Build an `AppConfig` from an imported `config.json`.
 

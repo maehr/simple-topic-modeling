@@ -24,10 +24,20 @@ further work.
 
 - Bump the actions-all group across 1 directory with 8 updates (#26)
 
+### Documentation
+
+- Add stack plan and update changelog
+
 ### Fixed
 
 - Reject ambiguous multi-file uploads
 - Reject binary files before classifying an upload
+- Keep the model settings when the data source changes
+- Restore renaming and label the card buttons
+- Match the heatmap selection by topic id
+- Never give two topics the same name
+- Give the number to the topic that was renamed last
+- Name PDF segments and pasted text correctly
 ## [2.0.0-alpha] - 2026-09-21
 
 ### Added

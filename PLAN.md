@@ -16,5 +16,11 @@ Merge from the bottom up.
 
 ## Status
 - Items 3–5: implemented, gate green, browser-tested on local `marimo run`.
+- Copilot review, 2026-09-29: all six open threads fixed.
+  - #34: Run demo keeps the reader's settings.
+  - #35: rename restored, card buttons labelled, heatmap matched by topic id.
+  - #37: PDF segments and pasted text named correctly.
+  - Browser testing found that two equal topic names crashed the result view. That bug is also on `main`.
+    Fixed in #35: a taken name gets a number.
 - Not verified: exported Pyodide `dist/` (the proxy blocks the Pyodide CDN in the build sandbox). Check it after merge.
 - Open: marimo-internal `handleFillUpdated/Unmount` console messages seen once after a slider change on PR 4. Cause unknown.

@@ -19,6 +19,9 @@ further work.
 - Share one selected topic across views
 - Rerun from the configuration-changed notice
 - Rename single-document modes by intent
+- Rename a topic from its detail view
+- Explain the diagnostics and compare runs
+- Make the research package the primary export
 
 ### Build and tooling
 
@@ -27,6 +30,8 @@ further work.
 ### Documentation
 
 - Add stack plan and update changelog
+- Update the changelog and the stack plan after the review
+- Add the rename, export, and diagnostics PRs to the stack plan
 
 ### Fixed
 
@@ -37,7 +42,10 @@ further work.
 - Match the heatmap selection by topic id
 - Never give two topics the same name
 - Give the number to the topic that was renamed last
+- Show a custom topic name verbatim on its card
 - Name PDF segments and pasted text correctly
+- Show a topic name verbatim in its heading
+- Address the review of the run comparison
 ## [2.0.0-alpha] - 2026-09-21
 
 ### Added

@@ -46,6 +46,7 @@ async def _():
     from simple_topic_modeling import result as result_mod
     from simple_topic_modeling.config import (
         LANGUAGE_LABELS,
+        MODE_LABELS,
         AppConfig,
         ModelConfig,
         PreprocessConfig,
@@ -61,6 +62,7 @@ async def _():
         AppConfig,
         FriendlyMessage,
         LANGUAGE_LABELS,
+        MODE_LABELS,
         ModelConfig,
         PreprocessConfig,
         StopWordConfig,
@@ -146,7 +148,7 @@ def _(mo):
             "How to use this tool": mo.md(
                 """
             1. **Add data.** Use the demo corpus, or load your own documents. You can also load
-               one long text, such as a book, and choose **Analyse as: Long document**.
+               one long text, such as a book, and choose **Analyse as: Ordered text**.
             2. **Configure.** Set the language, then set the number of topics.
             3. **Run and explore.** Select **Run model**. The app fits the model in this browser.
                Then read each topic and name it.
@@ -177,15 +179,15 @@ def _(mo):
             Yes. A topic model needs many documents, so the app splits one long text into
             **segments**, usually its paragraphs. Each segment counts as one document.
 
-            In **Long document** mode, each segment keeps its number, which is its position in the
+            In **Ordered text** mode, each segment keeps its number, which is its position in the
             text. The results then show where each topic occurs, and which passages represent it
             best. Use this mode for a book, a thesis, a report, or a transcript.
 
             Load the text as one TXT, Markdown, HTML, or text-based PDF file, or paste it. One PDF
             opens in this mode. A PDF segment is usually one page, not one paragraph.
 
-            In **Corpus document** mode, the segments are unrelated documents, and their order is
-            lost.
+            In **Independent segments** mode, the segments are unrelated documents, and their order
+            is lost.
             """
             ),
         }
@@ -230,11 +232,11 @@ def _(mo, source):
             one document.
 
             Use **one long text**, such as a book, a thesis, or a transcript, to see where each
-            topic occurs in it. Load the one file, then choose **Analyse as: Long document**. The
+            topic occurs in it. Load the one file, then choose **Analyse as: Ordered text**. The
             app splits the text into paragraphs and keeps their order.
 
             Use a **text-based PDF** in the same way. The app reads the text in this browser. One
-            PDF opens as a long document. A PDF rarely holds blank lines, so each page usually
+            PDF opens as an ordered text. A PDF rarely holds blank lines, so each page usually
             becomes one segment. A scanned PDF holds images, not text. The app does no OCR, so
             convert a scan to a searchable PDF first. The app does not open a PDF that needs a
             password to open.
@@ -309,10 +311,10 @@ def _(TopicError, file_input, io, paste_input, source):
 
 
 @app.cell(hide_code=True)
-def _(get_loaded, mo, text_names):
+def _(MODE_LABELS, get_loaded, mo, text_names):
     # These two controls apply to one text only. A loaded config.json from a run on one text
     # restores them, so a reader splits the text exactly as the author did. Otherwise one PDF
-    # opens as a long document, and any other text opens as a corpus document.
+    # opens as an ordered text, and any other text opens as independent segments.
     _loaded = get_loaded()
     _config = _loaded[0] if _loaded is not None else None
     _one_pdf = (
@@ -327,7 +329,6 @@ def _(get_loaded, mo, text_names):
         "blank_lines": "Split on blank lines",
         "lines": "Split by line",
     }
-    _mode_labels = {"corpus": "Corpus document", "long_document": "Long document"}
     split_mode = mo.ui.dropdown(
         options={label: code for code, label in _split_labels.items()},
         value=_split_labels[
@@ -338,8 +339,8 @@ def _(get_loaded, mo, text_names):
         label="How should the app split this text?",
     )
     analyse_as = mo.ui.radio(
-        options={label: code for code, label in _mode_labels.items()},
-        value=_mode_labels[_start_mode],
+        options={label: code for code, label in MODE_LABELS.items()},
+        value=MODE_LABELS[_start_mode],
         label="Analyse as",
         inline=True,
     )
@@ -385,9 +386,9 @@ def _(analyse_as, mo, split_mode, table, text_documents, text_names):
             [
                 mo.hstack([analyse_as, split_mode], justify="start", gap=2, wrap=True),
                 mo.md(
-                    "*A **corpus document** splits the text into unrelated documents. A **long"
-                    " document** keeps the order of its paragraphs, so the results show where"
-                    " each topic occurs in the text.*"
+                    "*In **Independent segments** mode, the pieces are unrelated documents. In"
+                    " **Ordered text** mode, the pieces keep their order, so the results show"
+                    " where each topic occurs in the text.*"
                 ),
             ]
         )
@@ -450,7 +451,20 @@ def _(
 
 
 @app.cell(hide_code=True)
-def _(corpus, corpus_error, load_error, load_notices, mo, pd, stats):
+def _(
+    analyse_as,
+    corpus,
+    corpus_error,
+    io,
+    load_error,
+    load_notices,
+    mo,
+    pd,
+    split_mode,
+    stats,
+    table,
+    text_names,
+):
     _problem = load_error or corpus_error
     if _problem is not None:
         _view = mo.callout(mo.md(f"**{_problem.detail}** {_problem.recovery}"), kind="warn")
@@ -472,6 +486,16 @@ def _(corpus, corpus_error, load_error, load_notices, mo, pd, stats):
                 "text": [document[:160] for document in corpus.documents[:5]],
             }
         )
+        # One line says what the model sees. It follows the mode that the reader chose.
+        if table is not None:
+            _seen = io.describe_analysis(1, len(corpus), "document", "corpus", "table")
+        elif text_names is not None and len(text_names) == 1:
+            _unit = io.segment_unit(split_mode.value, text_names[0].lower().endswith(".pdf"))
+            _seen = io.describe_analysis(1, len(corpus), _unit, analyse_as.value)
+        elif text_names is not None:
+            _seen = io.describe_analysis(len(text_names), len(corpus), "document", "corpus")
+        else:
+            _seen = None
         _view = mo.vstack(
             [
                 *[
@@ -479,6 +503,7 @@ def _(corpus, corpus_error, load_error, load_notices, mo, pd, stats):
                     for _note in load_notices
                 ],
                 mo.ui.table(_numbers, selection=None),
+                mo.md(f"*What the model sees: {_seen}.*") if _seen else mo.md(""),
                 mo.md("**Preview**"),
                 mo.ui.table(_preview, selection=None),
             ]
@@ -1396,7 +1421,7 @@ def _(
         )
         _position_note = (
             """
-        This run analyses **one long document**. Each segment is one piece of the text, usually a
+        This run analyses **one ordered text**. Each segment is one piece of the text, usually a
         paragraph, or a page for a PDF. Its number is its position. **Topics** shows where the
         selected topic occurs and lists its representative passages. **Documents** shows the topic
         share through the whole text, then lists the segments in their order.
@@ -1427,7 +1452,7 @@ def _(
                 **Dominant score.** The score of the strongest topic of one document. A low score
                 means that the document fits no topic well.
 
-                **Segment.** One piece of a long document, such as a paragraph. Its number is
+                **Segment.** One piece of an ordered text, such as a paragraph. Its number is
                 its position in the text.
 
                 **Topic diversity.** The share of top terms that occur in one topic only. A low

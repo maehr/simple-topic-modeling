@@ -94,7 +94,7 @@ Use a text file when the file itself is one document. The app reads any UTF-8 te
 the tags from HTML and XML. It removes the common syntax from Markdown.
 
 The app reads a text-based PDF file. It extracts the text in your browser with pypdf. One PDF opens
-as a long document. A PDF rarely holds blank lines, so each page usually becomes one segment.
+as an ordered text. A PDF rarely holds blank lines, so each page usually becomes one segment.
 
 - A scanned PDF holds images, not text. The app does no OCR. Convert the scan to a searchable PDF or
   to a text file first.
@@ -103,12 +103,12 @@ as a long document. A PDF rarely holds blank lines, so each page usually becomes
 
 The app rejects any other binary file, such as a DOCX file, an image, or a ZIP archive.
 
-## Analyse one long document
+## Analyse one ordered text
 
 A book, a thesis, or a transcript is one long text. The app can show where each topic occurs in it.
 
 1. Load one text file or one PDF file, or paste one text.
-2. Set **Analyse as** to **Long document**.
+2. Set **Analyse as** to **Ordered text**.
 3. Keep **Split on blank lines**. The app then makes one segment from each paragraph.
 4. Select **Run model**.
 
@@ -119,9 +119,10 @@ Each segment is one document for the model. Each segment keeps its position in t
 - `documents_topics.csv` holds `parent_document_id`, `segment_index`, and `segment_number`, so you
   can rebuild the order of the text.
 
-**Corpus document** is the default for a text file. **Long document** is the default for a PDF.
-**Corpus document** splits the text the same way, but it treats the segments as
-unrelated documents.
+**Independent segments** is the default for a text file. **Ordered text** is the default for a PDF.
+**Independent segments** splits the text the same way, but it treats the segments as
+unrelated documents. A line under the input summary says what the model sees, for example
+`1 file → 327 paragraphs → analysed as an ordered text`.
 
 ## Languages
 
@@ -151,7 +152,7 @@ The explorer holds five tabs:
 
 - **Overview** shows the topic cards, the topic map, the prevalence bars, and the similarity heatmap.
 - **Topics** shows the top terms, the word cloud, and the representative documents of one topic.
-  A long document also shows where the topic occurs.
+  An ordered text also shows where the topic occurs.
 - **Documents** shows the document map, a text search, a topic filter, and a score filter. A long
   document also shows the topic share through the text.
 - **Metadata** shows the topic mix per group and the topic share over time. It needs a group column

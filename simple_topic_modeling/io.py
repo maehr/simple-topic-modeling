@@ -22,7 +22,7 @@ import pandas as pd
 from pypdf import PdfReader
 from pypdf.errors import DependencyError
 
-from simple_topic_modeling.config import SplitMode
+from simple_topic_modeling.config import MODE_LABELS, AnalysisMode, SplitMode
 from simple_topic_modeling.errors import (
     DecodeError,
     FriendlyMessage,
@@ -48,12 +48,14 @@ __all__ = [
     "corpus_stats",
     "decode_text",
     "demo_table",
+    "describe_analysis",
     "detect_kind",
     "extract_pdf_text",
     "normalize_whitespace",
     "read_table",
     "read_text_document",
     "sample_corpus",
+    "segment_unit",
     "split_long_document",
     "split_text",
     "strip_markup",
@@ -596,6 +598,49 @@ def split_long_document(
         }
     )
     return segments, identifiers, metadata
+
+
+def segment_unit(mode: SplitMode, is_pdf: bool = False) -> str:
+    """Name one segment in the singular, as the split rule makes it.
+
+    >>> segment_unit("blank_lines"), segment_unit("lines"), segment_unit("whole")
+    ('paragraph', 'line', 'document')
+    >>> segment_unit("blank_lines", is_pdf=True)
+    'page'
+    """
+    if mode == "lines":
+        return "line"
+    if mode == "whole":
+        return "document"
+    return "page" if is_pdf else "paragraph"
+
+
+def describe_analysis(
+    n_files: int, n_segments: int, unit: str, mode: AnalysisMode, source: str = "file"
+) -> str:
+    """Say what the model sees: the files, the segments, and how the app treats them.
+
+    `unit` is the singular noun from `segment_unit`. `source` names what the app loaded.
+
+    >>> describe_analysis(1, 327, "paragraph", "long_document")
+    '1 file → 327 paragraphs → analysed as an ordered text'
+    >>> describe_analysis(1, 1, "page", "corpus")
+    '1 file → 1 page → analysed as independent segments'
+    >>> describe_analysis(3, 3, "document", "corpus")
+    '3 files → 3 documents → analysed as independent segments'
+    >>> describe_analysis(1, 295, "document", "corpus", "table")
+    '1 table → 295 documents → analysed as independent segments'
+    """
+    return (
+        f"{_count(n_files, source)} → {_count(n_segments, unit)}"
+        f" → analysed as {_MODE_PHRASES[mode]}"
+    )
+
+
+_MODE_PHRASES: dict[AnalysisMode, str] = {
+    "corpus": MODE_LABELS["corpus"].lower(),
+    "long_document": "an " + MODE_LABELS["long_document"].lower(),
+}
 
 
 def read_table(file: UploadedFile) -> pd.DataFrame:

@@ -17,6 +17,7 @@ from simple_topic_modeling.errors import ConfigFileError
 __all__ = [
     "LANGUAGE_ALIASES",
     "LANGUAGE_LABELS",
+    "MODE_LABELS",
     "AnalysisMode",
     "AppConfig",
     "Language",
@@ -28,6 +29,7 @@ __all__ = [
     "StopWordConfig",
     "config_from_upload",
     "load_app_config",
+    "mode_from_label",
     "package_version",
 ]
 
@@ -48,8 +50,30 @@ LANGUAGE_LABELS: dict[Language, str] = {
 }
 """User-facing label for each supported language."""
 
+MODE_LABELS: dict[AnalysisMode, str] = {
+    "corpus": "Independent segments",
+    "long_document": "Ordered text",
+}
+"""User-facing label for each analysis mode. The stored values stay `corpus` and `long_document`,
+so a saved `config.json` still loads."""
+
 LANGUAGE_ALIASES: dict[str, Language] = {"sp": "es"}
 """Accepted import aliases. `SPECS.md` section 3 accepts `sp`, but the app always writes `es`."""
+
+
+def mode_from_label(label: str) -> AnalysisMode:
+    """Map a user-facing mode label back to its stored value.
+
+    >>> mode_from_label("Ordered text")
+    'long_document'
+    >>> mode_from_label(MODE_LABELS["corpus"])
+    'corpus'
+    """
+    for value, text in MODE_LABELS.items():
+        if text == label:
+            return value
+    raise ValueError(f"Unknown analysis mode label: {label!r}")
+
 
 MAX_VOCABULARY_LIMIT = 20_000
 """Largest vocabulary that `SPECS.md` section 4 allows."""

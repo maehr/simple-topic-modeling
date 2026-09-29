@@ -128,6 +128,19 @@ def test_similarity_heatmap_covers_the_full_matrix(result):
     assert _spec(similarity_heatmap(result))["mark"]["type"] == "rect"
 
 
+def test_similarity_heatmap_selects_by_topic_id_not_by_name(result):
+    twins = rename_topic(rename_topic(result, 0, "Same"), 1, "Same")
+    frame = similarity_heatmap(twins, 0).data
+    marked = frame[frame["selected"] == 1]
+    assert ((marked["topic_a_id"] == 0) | (marked["topic_b_id"] == 0)).all()
+    assert len(marked) == 2 * result.n_topics - 1
+
+
+def test_similarity_heatmap_marks_nothing_without_a_selection(result):
+    assert similarity_heatmap(result).data["selected"].sum() == 0
+    assert similarity_heatmap(result, -1).data["selected"].sum() == 0
+
+
 def test_similarity_scale_is_fixed_so_runs_compare(result):
     spec = _spec(similarity_heatmap(result))
     assert spec["encoding"]["color"]["scale"]["domain"] == [0, 1]

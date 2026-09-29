@@ -283,12 +283,14 @@ def top_term_bars(result: TopicModelResult, topic: int, term_count: int = 15) ->
 def similarity_long_frame(result: TopicModelResult) -> pd.DataFrame:
     """Build the full similarity matrix in long form, for the heatmap.
 
+    The id columns identify a topic. Two topics can share a custom name, so a name cannot.
+
     >>> from simple_topic_modeling.result import _example_result
     >>> frame = similarity_long_frame(_example_result())
     >>> len(frame)
     4
     >>> frame.columns.tolist()
-    ['topic_a', 'topic_b', 'similarity']
+    ['topic_a_id', 'topic_a', 'topic_b_id', 'topic_b', 'similarity']
     """
     matrix = topic_similarity(result.topic_term)
     rows = []
@@ -296,7 +298,9 @@ def similarity_long_frame(result: TopicModelResult) -> pd.DataFrame:
         for second in range(result.n_topics):
             rows.append(
                 {
+                    "topic_a_id": first,
                     "topic_a": result.topic_names[first],
+                    "topic_b_id": second,
                     "topic_b": result.topic_names[second],
                     "similarity": float(matrix[first, second]),
                 }
@@ -314,9 +318,8 @@ def similarity_heatmap(result: TopicModelResult, selected: int | None = None) ->
     'rect'
     """
     frame = similarity_long_frame(result)
-    name = result.topic_names[selected] if selected is not None else None
     frame = frame.assign(
-        selected=((frame["topic_a"] == name) | (frame["topic_b"] == name)).astype(int)
+        selected=((frame["topic_a_id"] == selected) | (frame["topic_b_id"] == selected)).astype(int)
     )
     return (
         alt.Chart(frame, title="Topic similarity")

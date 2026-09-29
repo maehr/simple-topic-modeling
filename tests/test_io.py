@@ -5,6 +5,7 @@ from simple_topic_modeling.errors import DecodeError, NoUsableTextError, Unsuppo
 from simple_topic_modeling.io import (
     UploadedFile,
     build_corpus,
+    classify_uploads,
     corpus_stats,
     decode_text,
     detect_kind,
@@ -184,3 +185,51 @@ def test_a_sample_larger_than_the_corpus_changes_nothing():
 
     corpus, _ = build_corpus(["a", "b"], ["1", "2"])
     assert sample_corpus(corpus, 10) is corpus
+
+
+def _file(name: str) -> UploadedFile:
+    return UploadedFile(name, b"")
+
+
+def test_classify_uploads_no_files() -> None:
+    assert classify_uploads([]).kind == "none"
+
+
+def test_classify_uploads_rejects_binary_extension() -> None:
+    with pytest.raises(UnsupportedFileError):
+        classify_uploads([_file("a.csv"), _file("report.docx")])
+
+
+def test_classify_uploads_one_table() -> None:
+    plan = classify_uploads([_file("a.csv")])
+    assert plan.kind == "table"
+    assert plan.table == _file("a.csv")
+    assert plan.error is None
+
+
+def test_classify_uploads_several_text_files() -> None:
+    plan = classify_uploads([_file("a.txt"), _file("b.md")])
+    assert plan.kind == "text"
+    assert [item.name for item in plan.texts] == ["a.txt", "b.md"]
+
+
+def test_classify_uploads_text_and_pdf() -> None:
+    plan = classify_uploads([_file("a.txt"), _file("b.pdf")])
+    assert plan.kind == "text"
+    assert len(plan.texts) == 2
+
+
+def test_classify_uploads_two_tables() -> None:
+    plan = classify_uploads([_file("a.csv"), _file("b.json")])
+    assert plan.kind == "invalid"
+    assert plan.error is not None
+    assert "2 tables" in plan.error.detail
+    assert "Upload one table" in plan.error.recovery
+
+
+def test_classify_uploads_table_and_text() -> None:
+    plan = classify_uploads([_file("a.csv"), _file("b.txt"), _file("c.pdf")])
+    assert plan.kind == "invalid"
+    assert plan.error is not None
+    assert "1 table and 2 text files" in plan.error.detail
+    assert "only text and PDF files" in plan.error.recovery

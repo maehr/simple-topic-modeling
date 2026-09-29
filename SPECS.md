@@ -92,6 +92,8 @@ For unknown extensions, attempt UTF-8 decoding. If successful, treat the file as
 
 #### Import behavior
 
+The app accepts one table, or any number of text and PDF files. It rejects any other mix and shows a message. The message says what to upload.
+
 For CSV/TSV/JSON:
 
 - choose the text field/column,

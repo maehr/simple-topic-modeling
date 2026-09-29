@@ -39,8 +39,11 @@ __all__ = [
     "FileKind",
     "PdfExtraction",
     "SplitMode",
+    "UploadKind",
+    "UploadPlan",
     "UploadedFile",
     "build_corpus",
+    "classify_uploads",
     "corpus_size_warning",
     "corpus_stats",
     "decode_text",
@@ -57,6 +60,9 @@ __all__ = [
 ]
 
 FileKind = Literal["csv", "tsv", "json", "jsonl", "text"]
+
+UploadKind = Literal["none", "table", "text", "invalid"]
+"""How the app reads a set of uploaded files."""
 
 _TABLE_EXTENSIONS: dict[str, FileKind] = {
     ".csv": "csv",
@@ -212,6 +218,77 @@ def detect_kind(filename: str) -> FileKind:
     """
     suffix = UploadedFile(filename, b"").suffix
     return _TABLE_EXTENSIONS.get(suffix, "text")
+
+
+@dataclass(frozen=True, slots=True)
+class UploadPlan:
+    """How the app reads a set of uploaded files.
+
+    Kind `none` holds no files. Kind `table` holds one table file. Kind `text` holds one or more
+    text or PDF files. Kind `invalid` holds an error message and no files.
+
+    >>> UploadPlan("none").kind
+    'none'
+    """
+
+    kind: UploadKind
+    table: UploadedFile | None = None
+    texts: tuple[UploadedFile, ...] = ()
+    error: FriendlyMessage | None = None
+
+
+def classify_uploads(files: Sequence[UploadedFile]) -> UploadPlan:
+    """Decide how to read an upload: one table, text files, or nothing.
+
+    The app accepts one table, or any number of text and PDF files. It rejects any other mix.
+    A known binary extension raises `UnsupportedFileError` before the app counts the files.
+
+    >>> classify_uploads([]).kind
+    'none'
+    >>> classify_uploads([UploadedFile("a.csv", b"")]).kind
+    'table'
+    >>> classify_uploads([UploadedFile("a.txt", b""), UploadedFile("b.pdf", b"")]).kind
+    'text'
+    >>> plan = classify_uploads([UploadedFile("a.csv", b""), UploadedFile("b.txt", b"")])
+    >>> plan.kind
+    'invalid'
+    >>> plan.error.detail
+    'You uploaded 1 table and 1 text file. The app reads one table or text files, not both.'
+    >>> plan.error.recovery
+    'Upload one table, or upload only text and PDF files.'
+    >>> classify_uploads([UploadedFile("a.csv", b""), UploadedFile("b.docx", b"")])
+    Traceback (most recent call last):
+    simple_topic_modeling.errors.UnsupportedFileError: ...
+    """
+    for item in files:
+        if item.suffix in _BINARY_EXTENSIONS:
+            raise UnsupportedFileError(item.name)
+    tables = [item for item in files if detect_kind(item.name) != "text"]
+    texts = [item for item in files if detect_kind(item.name) == "text"]
+    if not files:
+        return UploadPlan("none")
+    if len(tables) == 1 and not texts:
+        return UploadPlan("table", table=tables[0])
+    if not tables:
+        return UploadPlan("text", texts=tuple(texts))
+    if texts:
+        detail = (
+            f"You uploaded {_count(len(tables), 'table')} and {_count(len(texts), 'text file')}."
+            " The app reads one table or text files, not both."
+        )
+    else:
+        detail = f"You uploaded {len(tables)} tables. The app reads one table at a time."
+    recovery = "Upload one table, or upload only text and PDF files."
+    return UploadPlan("invalid", error=FriendlyMessage(detail, recovery))
+
+
+def _count(number: int, noun: str) -> str:
+    """Write a count with its noun.
+
+    >>> _count(1, "table"), _count(2, "table")
+    ('1 table', '2 tables')
+    """
+    return f"{number} {noun}" if number == 1 else f"{number} {noun}s"
 
 
 def decode_text(file: UploadedFile) -> str:

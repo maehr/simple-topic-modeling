@@ -209,6 +209,8 @@ def _(mo, source):
             convert a scan to a searchable PDF first. The app does not open a PDF that needs a
             password to open.
 
+            Upload one table, or any number of text and PDF files. The app rejects any other mix.
+
             DOCX, images, and ZIP files are out of scope.
             """
             )
@@ -257,14 +259,15 @@ def _(TopicError, file_input, io, paste_input, source):
             table = io.demo_table()
         elif source.value == "Upload files":
             _uploads = [io.UploadedFile(item.name, item.contents) for item in file_input.value]
-            _tables = [item for item in _uploads if io.detect_kind(item.name) != "text"]
-            _plain = [item for item in _uploads if io.detect_kind(item.name) == "text"]
-            if _tables:
-                table = io.read_table(_tables[0])
-            elif _plain:
-                _read = [io.read_text_document(item) for item in _plain]
+            _plan = io.classify_uploads(_uploads)
+            if _plan.error is not None:
+                load_error = _plan.error
+            elif _plan.table is not None:
+                table = io.read_table(_plan.table)
+            elif _plan.texts:
+                _read = [io.read_text_document(item) for item in _plan.texts]
                 text_documents = [text for text, _ in _read]
-                text_names = [item.name for item in _plain]
+                text_names = [item.name for item in _plan.texts]
                 load_notices = [notice for _, notice in _read if notice is not None]
         elif paste_input.value.strip():
             text_documents = [paste_input.value]

@@ -1072,10 +1072,12 @@ def _(display_result, get_selected, mo, set_selected):
         return _click
 
     # One button per card, held in a global name. The buttons stay when the selection changes.
+    # Each label carries the topic number, so a screen reader can tell the buttons apart. The
+    # number stays unique after a rename.
     card_buttons = (
         mo.ui.array(
             [
-                mo.ui.button(label="Select topic", on_click=_pick(_number), value=0)
+                mo.ui.button(label=f"Select topic {_number + 1}", on_click=_pick(_number), value=0)
                 for _number in range(len(display_result.topic_names))
             ]
         )
@@ -1083,6 +1085,19 @@ def _(display_result, get_selected, mo, set_selected):
         else None
     )
     return (card_buttons,)
+
+
+@app.cell(hide_code=True)
+def _(mo, selected_index, set_overrides):
+    # The rename acts on the shared selection. A new selection rebuilds the input, so it starts
+    # empty. An empty name restores the automatic label.
+    def _apply(_value):
+        if selected_index is not None:
+            set_overrides(lambda current: {**current, selected_index: rename_input.value})
+
+    rename_input = mo.ui.text(label="Rename the selected topic", placeholder="Economy")
+    rename_button = mo.ui.button(label="Apply name", on_change=_apply)
+    return rename_button, rename_input
 
 
 @app.cell(hide_code=True)
@@ -1130,6 +1145,8 @@ def _(
     mo,
     pd,
     plots,
+    rename_button,
+    rename_input,
     score_filter,
     selected_index,
     topic_filter,
@@ -1212,7 +1229,9 @@ def _(
             _position_view = []
         _topics = mo.vstack(
             [
-                topic_select,
+                mo.hstack(
+                    [topic_select, rename_input, rename_button], justify="start", align="end"
+                ),
                 mo.md(
                     f"**Prevalence:** {display_result.topic_prevalence[_index]:.1%} of the"
                     f" {'text' if _long else 'corpus'}"

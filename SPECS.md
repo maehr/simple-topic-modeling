@@ -215,7 +215,12 @@ Topic selection is shared across tabs.
 
 ### Step 4 — Export
 
-Users can download individual CSV/JSON files or one ZIP bundle.
+The primary action is **Download complete research package (.zip)**. It bundles every table, the
+settings to repeat the run, and a README. The **Include the document text** checkbox sits under it
+and applies to the package and to the documents CSV.
+
+The single CSV and JSON files sit in a closed **Individual files** section. Each button carries a
+task label, then the file name: for example "Topics (topics.csv)".
 
 ---
 
@@ -549,6 +554,17 @@ Do not present diagnostics as an automatic quality score.
 ---
 
 ## 7. Export
+
+The notebook shows each single file under a task label. `exports.EXPORT_LABELS` maps the file name
+to the label. A test checks that the labels cover every file in `project.zip`, except `README.txt`.
+
+| File | Task label |
+|---|---|
+| `documents_topics.csv` | Documents with topic scores |
+| `topics.csv` | Topics |
+| `topic_terms.csv` | Top terms per topic |
+| `topic_similarity.csv` | Topic similarity |
+| `config.json` | Settings to repeat this run |
 
 ### `documents_topics.csv`
 

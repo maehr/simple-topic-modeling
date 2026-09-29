@@ -425,6 +425,9 @@ Topic 1 · economy, market, growth
 ```
 
 Users can rename topics without refitting.
+Users rename a topic from its header in the **Topics** tab, after they read its terms and documents.
+The header shows the topic name and a **Rename** button. The button opens a form with a text input, **Save name**, and **Cancel**.
+An empty name restores the automatic label. A change of the selected topic closes the form.
 
 ### 2-D projection
 
@@ -475,7 +478,7 @@ In ordered-text mode, the tab shows two more items:
   and a snippet.
 
 > **Info box — How to read a topic**  
-> Look at the top terms together with several high-scoring documents. Topic keywords are clues, not a complete definition. Rename the topic once its meaning is clear to you.
+> Look at the top terms together with several high-scoring documents. Topic keywords are clues, not a complete definition. Select **Rename** in the topic header once its meaning is clear to you.
 
 ### Documents
 

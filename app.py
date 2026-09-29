@@ -78,7 +78,23 @@ async def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
+    # The run request lets a control other than the run button start one fit.
+    # A later Rerun action reuses it.
+    get_source_choice, set_source_choice = mo.state("Demo data")
+    get_run_request, set_run_request = mo.state(False)
+    return get_run_request, get_source_choice, set_run_request, set_source_choice
+
+
+@app.cell(hide_code=True)
+def _(mo, set_run_request, set_source_choice):
+    def _run_demo(_value):
+        set_source_choice("Demo data")
+        set_run_request(True)
+
+    def _use_own_data(_value):
+        set_source_choice("Upload files")
+
+    _intro = mo.md(
         """
     # Simple Topic Modeling
 
@@ -90,10 +106,17 @@ def _(mo):
 
     A run takes a few seconds for a few hundred documents.
 
-    **A demo corpus is already loaded.** Go to **Step 3**. Select **Run model** to see a result.
+    Select **Run demo** to fit a model on the demo corpus now.
+    Select **Use my own data** to load your documents in Step 1.
     """
     )
-    return
+    # marimo holds a UI element by a weak reference. A button with a local name only is garbage
+    # collected after the cell runs, and marimo then drops its clicks. Give each button a global
+    # name.
+    run_demo_button = mo.ui.button(label="Run demo", kind="success", on_change=_run_demo)
+    own_data_button = mo.ui.button(label="Use my own data", kind="neutral", on_change=_use_own_data)
+    mo.vstack([_intro, mo.hstack([run_demo_button, own_data_button], justify="start")])
+    return own_data_button, run_demo_button
 
 
 @app.cell(hide_code=True)
@@ -120,8 +143,9 @@ def _(mo):
             1. **Add data.** Use the demo corpus, or load your own documents. You can also load
                one long text, such as a book, and choose **Analyse as: Long document**.
             2. **Configure.** Set the language, then set the number of topics.
-            3. **Run the model.** Select **Run model**. The app fits the model in this browser.
-            4. **Explore and export.** Read each topic, name it, then download the results.
+            3. **Run and explore.** Select **Run model**. The app fits the model in this browser.
+               Then read each topic and name it.
+            4. **Export.** Download the results.
 
             The demo corpus holds 295 French articles from two Swiss newspapers of 1914. A machine
             read the articles from a scan, so some words carry errors. A real archive looks like
@@ -171,10 +195,11 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo):
+def _(get_source_choice, mo, set_source_choice):
     source = mo.ui.radio(
         options=["Demo data", "Upload files", "Paste text"],
-        value="Demo data",
+        value=get_source_choice(),
+        on_change=set_source_choice,
         label="Where does your text come from?",
         inline=True,
     )
@@ -502,13 +527,15 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(TopicError, config_from_upload, mo, set_loaded):
+def _(TopicError, config_from_upload, mo, set_loaded, set_touched):
     def _apply(value):
         # marimo calls this when a file arrives, and again with an empty value on a reset.
         if not value:
             return
         _file = value[0]
         try:
+            # The loaded file replaces every earlier choice of the reader.
+            set_touched({})
             set_loaded((config_from_upload(_file.contents), _file.name, None))
         except TopicError as error:
             set_loaded((None, _file.name, error.friendly))
@@ -662,72 +689,101 @@ def _(mo):
     # Holds (config, file name, failure) for a loaded config.json, or None. The reset button
     # clears it, so a reset always restores the recommended defaults.
     get_loaded, set_loaded = mo.state(None)
-    return get_loaded, get_reset, set_loaded, set_reset
+    # Maps a model setting to the value that the reader chose. A change of the data source
+    # rebuilds the controls below, and these values survive it. A reset and a loaded config.json
+    # clear it.
+    get_touched, set_touched = mo.state({})
+    return get_loaded, get_reset, get_touched, set_loaded, set_reset, set_touched
 
 
 @app.cell(hide_code=True)
-def _(get_loaded, get_reset, mo, set_loaded, set_reset, source):
+def _(get_loaded, get_reset, get_touched, mo, set_loaded, set_reset, set_touched, source):
     get_reset()
     _loaded = get_loaded()
     _model = _loaded[0].model if _loaded is not None and _loaded[0] is not None else None
+    _touched = get_touched()
+
+    def _start(field, default):
+        # The reader's own choice wins over a loaded config.json, which wins over the default.
+        if field in _touched:
+            return _touched[field]
+        return getattr(_model, field) if _model is not None else default
+
+    def _keep(field):
+        # A setter called from an element of this cell does not rerun this cell, so a drag on a
+        # slider never rebuilds it.
+        def _store(value):
+            set_touched(lambda current: {**current, field: value})
+
+        return _store
+
     _model_labels = {"nmf": "NMF (recommended)", "lda": "LDA"}
     _ngram_labels = {"1": "Single words", "1-2": "Words and pairs", "2": "Pairs only"}
     model_type = mo.ui.dropdown(
         options={"NMF (recommended)": "nmf", "LDA": "lda"},
-        value=_model_labels[_model.model_type] if _model is not None else "NMF (recommended)",
+        value=_model_labels[_start("model_type", "nmf")],
         label="Model",
+        on_change=_keep("model_type"),
     )
     # The demo corpus carries six newspaper sections. Six topics therefore give a first result
     # that a newcomer can check against the category column. Ten topics split the finance
-    # articles into several topics of bare numbers.
+    # articles into several topics of bare numbers. The source decides the count only until the
+    # reader moves the slider.
     _start_topics = 6 if source.value == "Demo data" else 10
     n_topics = mo.ui.slider(
         2,
         30,
-        value=_model.n_topics if _model is not None else _start_topics,
+        value=_start("n_topics", _start_topics),
         step=1,
         label="Number of topics",
         show_value=True,
+        on_change=_keep("n_topics"),
     )
     max_features = mo.ui.number(
         100,
         20000,
-        value=_model.max_features if _model is not None else 5000,
+        value=_start("max_features", 5000),
         step=100,
         label="Max vocabulary",
+        on_change=_keep("max_features"),
     )
     min_df = mo.ui.number(
         1,
         100,
-        value=_model.min_df if _model is not None else 2,
+        value=_start("min_df", 2),
         step=1,
         label="Minimum document frequency",
+        on_change=_keep("min_df"),
     )
     max_df = mo.ui.slider(
         0.5,
         1.0,
-        value=_model.max_df if _model is not None else 0.95,
+        value=_start("max_df", 0.95),
         step=0.01,
         label="Maximum document frequency",
         show_value=True,
+        on_change=_keep("max_df"),
     )
     ngrams = mo.ui.dropdown(
         options={"Single words": "1", "Words and pairs": "1-2", "Pairs only": "2"},
-        value=_ngram_labels[_model.ngrams] if _model is not None else "Single words",
+        value=_ngram_labels[_start("ngrams", "1")],
         label="N-grams",
+        on_change=_keep("ngrams"),
     )
     # The seed is what makes a run repeatable. It already reached both models; it was only
     # invisible. A reader who has the corpus and the seed gets the same topics.
     random_seed = mo.ui.number(
         0,
         2**31 - 1,
-        value=_model.random_seed if _model is not None else 42,
+        value=_start("random_seed", 42),
         step=1,
         label="Random seed",
+        on_change=_keep("random_seed"),
     )
 
     def _reset(_value):
         set_loaded(None)
+        set_touched({})
         set_reset(lambda current: current + 1)
 
     reset_button = mo.ui.button(label="Reset recommended defaults", on_change=_reset)
@@ -861,7 +917,7 @@ def _(
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md("""## Step 3 — Run the model""")
+    mo.md("""## Step 3 — Run and explore""")
     return
 
 
@@ -884,6 +940,7 @@ def _(mo):
 def _(
     FriendlyMessage,
     TopicError,
+    get_run_request,
     modeling,
     modelled_corpus,
     pending_config,
@@ -891,12 +948,17 @@ def _(
     set_failure,
     set_overrides,
     set_result,
+    set_run_request,
 ):
-    # This cell holds the one expensive step. It fits only when the run button was clicked.
+    # This cell holds the one expensive step. It fits only after the run button or a run request.
+    # The cell clears the run request first, so one request starts one fit.
     # marimo resets `run_button.value` to False after the dependent cells run, so a change to any
     # setting re-runs this cell without fitting and the previous result survives. A failed fit
     # stores a message and leaves the previous result in place.
-    if run_button.value and modelled_corpus is not None:
+    _requested = get_run_request()
+    if _requested:
+        set_run_request(False)
+    if (run_button.value or _requested) and modelled_corpus is not None:
         try:
             set_result(modeling.fit_topic_model(modelled_corpus, pending_config))
             set_overrides({})

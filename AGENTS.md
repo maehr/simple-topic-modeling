@@ -196,6 +196,13 @@ Use this pattern. Do not replace it without a browser test.
   therefore reruns the fit cell without a fit, and the state keeps the previous result.
 * Catch the failure in the fit cell. Store the message. Never clear the result.
 * Compare `result.config` against the live config to raise the *Configuration changed* banner.
+* A control other than the run button starts a fit through the `mo.state` run request. The fit
+  cell reads the request and clears it before it fits. One request therefore starts one fit.
+* Give each interactive UI element a global name. marimo holds an element by a weak reference.
+  A button with only a local `_` name loses its clicks after the cell runs.
+* A change of the data source rebuilds the model settings. Each setting writes the reader's value
+  to a `mo.state` map through `on_change`. The rebuild reads that map, so the reader's values
+  survive. A reset and a loaded `config.json` clear the map.
 
 `mo.ui.form` does not work here. A form copies the element it wraps, so the app cannot read the live
 value to compare it against the submitted value.

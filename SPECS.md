@@ -36,7 +36,8 @@ Requirements:
 
 - Show an intro above Step 1. Name the app. State what it finds. State what the reader gets. State
   the length of a run.
-- Show a bold line that says that a demo corpus is loaded. Point it at **Run model** in Step 3.
+- Show two primary actions above Step 1. **Run demo** selects the demo data source and fits the
+  model with the current settings. **Use my own data** selects the upload source.
 - Keep the privacy callout under the intro.
 - Show two closed accordions. **How to use this tool** holds the four steps and describes the demo
   corpus. **What is a topic model?** explains a topic, a term, and a score without jargon.
@@ -190,9 +191,12 @@ Empty documents are excluded with the count shown.
 
 ### Step 2 — Configure
 
-Configuration has three sections: **Language & cleaning**, **Model**, **Run**.
+Configuration has two sections: **Language & cleaning** and **Model**.
 
-### Step 3 — Explore
+### Step 3 — Run and explore
+
+Step 3 starts with the **Run** section. It holds the summary and **Run model**. See Run behavior.
+The tabs follow the **Run** section.
 
 Tabs:
 
@@ -371,6 +375,8 @@ Show a summary before fitting, e.g.:
 > 2,418 documents · English · NMF · 10 topics · max 5,000 terms
 
 Primary button: **Run model**.
+
+**Run demo** fits with the same rules.
 
 Changing settings after a successful run shows:
 
@@ -640,7 +646,7 @@ Performance rules:
 
 - keep matrices sparse,
 - do not densify the full document-term matrix,
-- fit only on **Run model**,
+- fit only on **Run model** or **Run demo**,
 - cache derived coordinates/similarities per run,
 - use snippets rather than full text in tables,
 - sample scatter-plot points if rendering becomes slow without changing model results.

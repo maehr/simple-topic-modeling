@@ -62,7 +62,8 @@ model API. The app builds every download in your browser.
 
 ## What it does
 
-1. Add a corpus. Drag files in, paste text, or load the demo data.
+1. Add a corpus. Drag files in, paste text, or load the demo data. Select **Run demo** to fit a
+   model on the demo corpus in one step.
 2. Choose a language. Edit the stop words when you need to.
 3. Choose a model and its parameters.
 4. Select **Run model**. The app fits the model in your browser.
@@ -73,8 +74,8 @@ model API. The app builds every download in your browser.
 Step 2 shows the model and the number of topics. The other parameters wait in a closed **Advanced
 settings** panel.
 
-The app fits a model only when you select **Run model**. A changed setting does not start a new fit.
-The app keeps the last result until a new fit succeeds.
+The app fits a model only when you select **Run model** or **Run demo**. A changed setting does not
+start a new fit. The app keeps the last result until a new fit succeeds.
 
 ## What it reads
 

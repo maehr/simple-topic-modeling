@@ -50,6 +50,7 @@ async def _():
         ModelConfig,
         PreprocessConfig,
         StopWordConfig,
+        config_changed,
     )
     from simple_topic_modeling.errors import FriendlyMessage, TopicError
     from simple_topic_modeling.preprocess import frequent_terms
@@ -64,6 +65,7 @@ async def _():
         PreprocessConfig,
         StopWordConfig,
         TopicError,
+        config_changed,
         effective_stopwords,
         exports,
         frequent_terms,
@@ -927,7 +929,10 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(corpus, mo, pending_config):
     run_button = mo.ui.run_button(label="Run model", kind="success", disabled=corpus is None)
-    mo.vstack([mo.md(f"**{pending_config.summary(len(corpus) if corpus else 0)}**"), run_button])
+    # The sidebar stays in view while the page scrolls, so the summary and the run button sit
+    # next to the settings and the results alike.
+    _summary = mo.md(f"**{pending_config.summary(len(corpus) if corpus else 0)}**")
+    mo.sidebar([mo.md("### Run"), _summary, run_button], width="20rem")
     return (run_button,)
 
 
@@ -1000,19 +1005,33 @@ def _(get_overrides, get_result, result_mod):
 
 
 @app.cell(hide_code=True)
-def _(display_result, get_failure, mo, pending_config):
+def _(config_changed, display_result, get_failure, mo, pending_config, set_run_request):
+    # The rerun button needs a global name: marimo holds a UI element by a weak reference.
+    # It sets the same run request as Run demo, and the fit cell clears that request.
+    rerun_button = mo.ui.button(
+        label="Rerun",
+        kind="warn",
+        on_change=lambda _value: set_run_request(True),
+    )
     _notes = []
     _failure = get_failure()
     if _failure is not None:
         _notes.append(
             mo.callout(mo.md(f"**{_failure.detail}** {_failure.recovery}"), kind="danger")
         )
-    if display_result is not None and display_result.config != pending_config.model_dump():
+    if config_changed(None if display_result is None else display_result.config, pending_config):
         _notes.append(
-            mo.callout(mo.md("**Configuration changed — rerun to update results.**"), kind="warn")
+            mo.callout(
+                mo.hstack(
+                    [mo.md("**Configuration changed — rerun to update results.**"), rerun_button],
+                    justify="space-between",
+                    align="center",
+                ),
+                kind="warn",
+            )
         )
     mo.vstack(_notes) if _notes else mo.md("")
-    return
+    return (rerun_button,)
 
 
 @app.cell(hide_code=True)

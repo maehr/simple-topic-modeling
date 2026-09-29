@@ -10,6 +10,7 @@ from simple_topic_modeling.config import (
     ModelConfig,
     PreprocessConfig,
     StopWordConfig,
+    config_changed,
     config_from_upload,
     normalize_language,
     package_version,
@@ -127,3 +128,10 @@ def test_config_from_upload_reports_a_recovery_action(payload, detail):
         config_from_upload(payload)
     assert caught.value.friendly.detail == detail
     assert caught.value.friendly.recovery == "Upload the config.json that this app wrote in Step 4."
+
+
+def test_config_changed():
+    base = AppConfig()
+    assert not config_changed(None, base)
+    assert not config_changed(base.model_dump(), base)
+    assert config_changed(base.model_dump(), AppConfig(language="de"))

@@ -8,6 +8,7 @@ import pytest
 
 from simple_topic_modeling.config import AppConfig, ModelConfig, load_app_config
 from simple_topic_modeling.exports import (
+    EXPORT_LABELS,
     config_json,
     documents_topics_frame,
     project_zip,
@@ -153,3 +154,8 @@ def test_zip_carries_the_text_when_asked(result):
     archive = zipfile.ZipFile(io.BytesIO(project_zip(result, AppConfig(), include_text=True)))
     frame = pd.read_csv(io.BytesIO(archive.read("documents_topics.csv")))
     assert "text" in frame.columns
+
+
+def test_every_single_file_has_a_task_label(result):
+    archive = zipfile.ZipFile(io.BytesIO(project_zip(result, AppConfig())))
+    assert set(EXPORT_LABELS) == set(archive.namelist()) - {"README.txt"}

@@ -152,7 +152,7 @@ def _(mo):
             2. **Configure.** Set the language, then set the number of topics.
             3. **Run and explore.** Select **Run model**. The app fits the model in this browser.
                Then read each topic and name it.
-            4. **Export.** Download the results.
+            4. **Export.** Download the research package, or single files.
 
             The demo corpus holds 295 French articles from two Swiss newspapers of 1914. A machine
             read the articles from a scan, so some words carry errors. A real archive looks like
@@ -1606,8 +1606,10 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    include_text = mo.ui.checkbox(value=False, label="Include the document text in the CSV")
-    include_text
+    include_text = mo.ui.checkbox(
+        value=False,
+        label="Include the document text (in the package and in the documents CSV)",
+    )
     return (include_text,)
 
 
@@ -1621,40 +1623,56 @@ def _(AppConfig, display_result, exports, include_text, mo):
         # Export the settings of the fitted result, not the live controls. A changed control
         # would otherwise describe a run that did not make these files.
         _config = AppConfig.model_validate(display_result.config)
+        _package = mo.download(
+            data=exports.project_zip(display_result, _config, include_text.value),
+            filename="project.zip",
+            label="Download complete research package (.zip)",
+            mimetype="application/zip",
+        )
         _files = {
-            "documents_topics.csv": exports.documents_topics_frame(
-                display_result, include_text.value
+            "documents_topics.csv": (
+                exports.to_csv_bytes(
+                    exports.documents_topics_frame(display_result, include_text.value)
+                ),
+                "text/csv",
             ),
-            "topics.csv": exports.topics_frame(display_result),
-            "topic_terms.csv": exports.topic_terms_frame(display_result),
-            "topic_similarity.csv": exports.topic_similarity_frame(display_result),
+            "topics.csv": (
+                exports.to_csv_bytes(exports.topics_frame(display_result)),
+                "text/csv",
+            ),
+            "topic_terms.csv": (
+                exports.to_csv_bytes(exports.topic_terms_frame(display_result)),
+                "text/csv",
+            ),
+            "topic_similarity.csv": (
+                exports.to_csv_bytes(exports.topic_similarity_frame(display_result)),
+                "text/csv",
+            ),
+            "config.json": (
+                exports.config_json(_config, display_result.topic_names),
+                "application/json",
+            ),
         }
         _buttons = [
             mo.download(
-                data=exports.to_csv_bytes(frame),
-                filename=name,
-                label=name,
-                mimetype="text/csv",
+                data=_data,
+                filename=_name,
+                label=f"{exports.EXPORT_LABELS[_name]} ({_name})",
+                mimetype=_mimetype,
             )
-            for name, frame in _files.items()
+            for _name, (_data, _mimetype) in _files.items()
         ]
-        _buttons.append(
-            mo.download(
-                data=exports.config_json(_config, display_result.topic_names),
-                filename="config.json",
-                label="config.json",
-                mimetype="application/json",
-            )
+        _view = mo.vstack(
+            [
+                _package,
+                mo.md(
+                    "The package holds every table, the settings to repeat the run, and a README."
+                ),
+                include_text,
+                mo.accordion({"Individual files": mo.vstack(_buttons, gap=0.5, align="start")}),
+            ],
+            gap=0.75,
         )
-        _buttons.append(
-            mo.download(
-                data=exports.project_zip(display_result, _config, include_text.value),
-                filename="project.zip",
-                label="project.zip",
-                mimetype="application/zip",
-            )
-        )
-        _view = mo.hstack(_buttons, justify="start", gap=1, wrap=True)
     _view
     return
 

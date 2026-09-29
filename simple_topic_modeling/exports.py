@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from simple_topic_modeling.result import TopicModelResult
 
 __all__ = [
+    "EXPORT_LABELS",
     "ZIP_README",
     "config_json",
     "documents_topics_frame",
@@ -33,6 +34,19 @@ __all__ = [
 
 TOP_TERM_COUNT = 10
 """Terms per topic in `topics.csv` and `topic_terms.csv`."""
+
+EXPORT_LABELS: dict[str, str] = {
+    "documents_topics.csv": "Documents with topic scores",
+    "topics.csv": "Topics",
+    "topic_terms.csv": "Top terms per topic",
+    "topic_similarity.csv": "Topic similarity",
+    "config.json": "Settings to repeat this run",
+}
+"""The task label of each single file. The notebook shows it beside the file name.
+
+>>> EXPORT_LABELS["config.json"]
+'Settings to repeat this run'
+"""
 
 ZIP_README = """Simple Topic Modeling export
 

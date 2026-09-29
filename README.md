@@ -68,7 +68,7 @@ model API. The app builds every download in your browser.
 3. Choose a model and its parameters.
 4. Select **Run model**. The app fits the model in your browser.
 5. Explore the topics in the five tabs.
-6. Rename a topic. The app does not refit the model.
+6. Rename a topic with the **Rename** button in its header on the **Topics** tab. The app does not refit the model.
 7. Download the results.
 
 Step 2 shows the model and the number of topics. The other parameters wait in a closed **Advanced

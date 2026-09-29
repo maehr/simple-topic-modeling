@@ -972,13 +972,17 @@ def _(mo):
     # One value holds the selected topic for every view. The dropdown, the topic map, the bars,
     # and the card buttons all write it. Every view reads it.
     get_selected, set_selected = mo.state(None)
+    # The index of the topic whose name the reader edits now, or None while no form is open.
+    get_renaming, set_renaming = mo.state(None)
     return (
         get_failure,
         get_overrides,
+        get_renaming,
         get_result,
         get_selected,
         set_failure,
         set_overrides,
+        set_renaming,
         set_result,
         set_selected,
     )
@@ -1135,23 +1139,68 @@ def _(display_result, get_selected, mo, set_selected):
 
 
 @app.cell(hide_code=True)
-def _(mo, selected_index, set_overrides):
-    # The rename acts on the shared selection. A new selection rebuilds the input, so it starts
-    # empty. An empty name restores the automatic label. The overrides apply in order, and a
-    # taken name gets a number. The latest rename therefore moves to the end, so the topic that
-    # the reader just renamed gets the number, not an earlier one.
-    def _apply(_value):
-        if selected_index is not None:
+def _(display_result, mo, selected_index, set_renaming):
+    # The Rename button opens the form for the selected topic. This cell never reads the renaming
+    # state: a cell that calls a setter is not rerun by it, and the button would lose its clicks.
+    # The cell reruns when the selection changes. It then closes the form, so the form never
+    # edits another topic than the one the reader opened it for.
+    def _open_form(_count):
+        set_renaming(selected_index)
+        return (_count or 0) + 1
+
+    set_renaming(None)
+    rename_button = (
+        mo.ui.button(label="Rename", on_click=_open_form, value=0)
+        if display_result is not None
+        else None
+    )
+    return (rename_button,)
+
+
+@app.cell(hide_code=True)
+def _(display_result, get_renaming, mo, selected_index):
+    # A new input for each opening of the form, so it starts from the current name. The input is
+    # empty while the topic keeps its automatic label. The label is then its placeholder.
+    _open = selected_index is not None and get_renaming() == selected_index
+    rename_input = None
+    if display_result is not None and selected_index is not None:
+        _auto = display_result.topic_auto_labels[selected_index]
+        _current = display_result.topic_names[selected_index]
+        rename_input = mo.ui.text(
+            value="" if _current == _auto else _current,
+            label="Topic name",
+            placeholder=_auto,
+            full_width=True,
+        )
+    is_renaming = _open and rename_input is not None
+    return is_renaming, rename_input
+
+
+@app.cell(hide_code=True)
+def _(mo, rename_input, selected_index, set_overrides, set_renaming):
+    # Save writes the name and closes the form. An empty name restores the automatic label. The
+    # overrides apply in order, and a taken name gets a number. The latest rename therefore moves
+    # to the end, so the topic that the reader just renamed gets the number, not an earlier one.
+    # Cancel closes the form and changes nothing.
+    def _save(_count):
+        if selected_index is not None and rename_input is not None:
+            _name = rename_input.value
             set_overrides(
                 lambda current: {
                     **{index: name for index, name in current.items() if index != selected_index},
-                    selected_index: rename_input.value,
+                    selected_index: _name,
                 }
             )
+        set_renaming(None)
+        return (_count or 0) + 1
 
-    rename_input = mo.ui.text(label="Rename the selected topic", placeholder="Economy")
-    rename_button = mo.ui.button(label="Apply name", on_change=_apply)
-    return rename_button, rename_input
+    def _cancel(_count):
+        set_renaming(None)
+        return (_count or 0) + 1
+
+    save_button = mo.ui.button(label="Save name", kind="success", on_click=_save, value=0)
+    cancel_button = mo.ui.button(label="Cancel", on_click=_cancel, value=0)
+    return cancel_button, save_button
 
 
 @app.cell(hide_code=True)
@@ -1191,9 +1240,11 @@ def _(display_result, mo):
 @app.cell(hide_code=True)
 def _(
     bars_chart,
+    cancel_button,
     card_buttons,
     display_result,
     document_search,
+    is_renaming,
     map_chart,
     metrics,
     mo,
@@ -1201,6 +1252,7 @@ def _(
     plots,
     rename_button,
     rename_input,
+    save_button,
     score_filter,
     selected_index,
     topic_filter,
@@ -1284,8 +1336,23 @@ def _(
             _position_view = []
         _topics = mo.vstack(
             [
+                topic_select,
                 mo.hstack(
-                    [topic_select, rename_input, rename_button], justify="start", align="end"
+                    [mo.md(f"### {display_result.topic_names[_index]}"), rename_button],
+                    justify="start",
+                    align="center",
+                    gap=1,
+                ),
+                *(
+                    [
+                        mo.hstack(
+                            [rename_input, save_button, cancel_button],
+                            justify="start",
+                            align="end",
+                        )
+                    ]
+                    if is_renaming
+                    else []
                 ),
                 mo.md(
                     f"**Prevalence:** {display_result.topic_prevalence[_index]:.1%} of the"
@@ -1301,7 +1368,8 @@ def _(
                             f"""
                         Read the top terms together with several high-scoring
                         {"passages" if _long else "documents"}. The keywords are clues, not a full
-                        definition. Rename the topic once its meaning is clear to you.
+                        definition. Select **Rename** in the topic header once its meaning is clear
+                        to you.
                         """
                         )
                     }
@@ -1438,8 +1506,8 @@ def _(
         **Documents** lists the {_unit} of a topic. **Metadata** charts the topics against your
         own columns. **Diagnostics** describes the run.
         {_position_note}
-        Start in **Topics**. Read the terms of a topic. Give the topic a name. Then go to Step 4
-        and export your results.
+        Start in **Topics**. Read the terms of a topic. Then select **Rename** in the topic header
+        to give the topic a name. Then go to Step 4 and export your results.
         """
         )
         _glossary = mo.accordion(

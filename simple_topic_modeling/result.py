@@ -190,16 +190,26 @@ class TopicModelResult:
 def rename_topic(result: TopicModelResult, index: int, name: str) -> TopicModelResult:
     """Return a copy with one topic renamed. This never refits the model.
 
-    An empty name restores the automatic label.
+    An empty name restores the automatic label. The dropdown and the topic filter use the names
+    as option labels, so two topics never share a name. A taken name gets a number in brackets,
+    starting from the topic number.
 
     >>> renamed = rename_topic(_example_result(), 0, "Economy")
     >>> renamed.topic_names[0]
     'Economy'
     >>> rename_topic(renamed, 0, "  ").topic_names[0]
     'Topic 1 · alpha, beta, gamma'
+    >>> rename_topic(renamed, 1, "Economy").topic_names
+    ['Economy', 'Economy (2)']
     """
     names = list(result.topic_names)
-    names[index] = name.strip() or result.topic_auto_labels[index]
+    wanted = name.strip() or result.topic_auto_labels[index]
+    taken = {other for position, other in enumerate(names) if position != index}
+    unique, number = wanted, index + 1
+    while unique in taken:
+        unique = f"{wanted} ({number})"
+        number += 1
+    names[index] = unique
     return dataclasses.replace(result, topic_names=names)
 
 

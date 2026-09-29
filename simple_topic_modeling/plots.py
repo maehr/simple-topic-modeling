@@ -78,6 +78,21 @@ def snippet(text: str, length: int = SNIPPET_LENGTH) -> str:
     return f"{collapsed[:length]}…"
 
 
+def heading_html(text: str, level: int = 3) -> str:
+    """Build a heading that shows `text` verbatim, in the style of a marimo Markdown heading.
+
+    A Markdown heading would parse `**bold**` or `_italic_` in a topic name. This escapes the
+    name instead. The wrapper carries the classes that marimo puts around a Markdown cell.
+
+    >>> heading_html("**Finance** & <b>x</b>").split("<h3>")[1]
+    '**Finance** &amp; &lt;b&gt;x&lt;/b&gt;</h3></span>'
+    """
+    return (
+        '<span class="markdown prose dark:prose-invert contents">'
+        f"<h{level}>{escape(text)}</h{level}></span>"
+    )
+
+
 def topic_cards(result: TopicModelResult, term_count: int = 5) -> pd.DataFrame:
     """Build the topic cards of `SPECS.md` section 6.
 

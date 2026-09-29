@@ -9,6 +9,7 @@ from simple_topic_modeling.plots import (
     SNIPPET_LENGTH,
     document_frame,
     document_scatter,
+    heading_html,
     prevalence_bars,
     representative_documents,
     similarity_heatmap,
@@ -27,6 +28,14 @@ from simple_topic_modeling.result import _example_result, rename_topic
 @pytest.fixture
 def result(corpus, config):
     return fit_topic_model(corpus, config)
+
+
+def test_heading_html_shows_the_name_verbatim():
+    name = "**Finance** <b>x</b> & _y_ # z"
+    out = heading_html(name)
+    assert "<h3>**Finance** &lt;b&gt;x&lt;/b&gt; &amp; _y_ # z</h3>" in out
+    assert "<b>" not in out
+    assert "<h2>" in heading_html("x", level=2)
 
 
 def test_snippet_collapses_whitespace():

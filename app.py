@@ -1338,7 +1338,10 @@ def _(
             [
                 topic_select,
                 mo.hstack(
-                    [mo.md(f"### {display_result.topic_names[_index]}"), rename_button],
+                    [
+                        mo.Html(plots.heading_html(display_result.topic_names[_index])),
+                        rename_button,
+                    ],
                     justify="start",
                     align="center",
                     gap=1,

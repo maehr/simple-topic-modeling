@@ -200,6 +200,9 @@ Use this pattern. Do not replace it without a browser test.
   cell reads the request and clears it before it fits. One request therefore starts one fit.
 * Give each interactive UI element a global name. marimo holds an element by a weak reference.
   A button with only a local `_` name loses its clicks after the cell runs.
+* A change of the data source rebuilds the model settings. Each setting writes the reader's value
+  to a `mo.state` map through `on_change`. The rebuild reads that map, so the reader's values
+  survive. A reset and a loaded `config.json` clear the map.
 
 `mo.ui.form` does not work here. A form copies the element it wraps, so the app cannot read the live
 value to compare it against the submitted value.

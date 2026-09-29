@@ -527,13 +527,15 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(TopicError, config_from_upload, mo, set_loaded):
+def _(TopicError, config_from_upload, mo, set_loaded, set_touched):
     def _apply(value):
         # marimo calls this when a file arrives, and again with an empty value on a reset.
         if not value:
             return
         _file = value[0]
         try:
+            # The loaded file replaces every earlier choice of the reader.
+            set_touched({})
             set_loaded((config_from_upload(_file.contents), _file.name, None))
         except TopicError as error:
             set_loaded((None, _file.name, error.friendly))
@@ -687,72 +689,101 @@ def _(mo):
     # Holds (config, file name, failure) for a loaded config.json, or None. The reset button
     # clears it, so a reset always restores the recommended defaults.
     get_loaded, set_loaded = mo.state(None)
-    return get_loaded, get_reset, set_loaded, set_reset
+    # Maps a model setting to the value that the reader chose. A change of the data source
+    # rebuilds the controls below, and these values survive it. A reset and a loaded config.json
+    # clear it.
+    get_touched, set_touched = mo.state({})
+    return get_loaded, get_reset, get_touched, set_loaded, set_reset, set_touched
 
 
 @app.cell(hide_code=True)
-def _(get_loaded, get_reset, mo, set_loaded, set_reset, source):
+def _(get_loaded, get_reset, get_touched, mo, set_loaded, set_reset, set_touched, source):
     get_reset()
     _loaded = get_loaded()
     _model = _loaded[0].model if _loaded is not None and _loaded[0] is not None else None
+    _touched = get_touched()
+
+    def _start(field, default):
+        # The reader's own choice wins over a loaded config.json, which wins over the default.
+        if field in _touched:
+            return _touched[field]
+        return getattr(_model, field) if _model is not None else default
+
+    def _keep(field):
+        # A setter called from an element of this cell does not rerun this cell, so a drag on a
+        # slider never rebuilds it.
+        def _store(value):
+            set_touched(lambda current: {**current, field: value})
+
+        return _store
+
     _model_labels = {"nmf": "NMF (recommended)", "lda": "LDA"}
     _ngram_labels = {"1": "Single words", "1-2": "Words and pairs", "2": "Pairs only"}
     model_type = mo.ui.dropdown(
         options={"NMF (recommended)": "nmf", "LDA": "lda"},
-        value=_model_labels[_model.model_type] if _model is not None else "NMF (recommended)",
+        value=_model_labels[_start("model_type", "nmf")],
         label="Model",
+        on_change=_keep("model_type"),
     )
     # The demo corpus carries six newspaper sections. Six topics therefore give a first result
     # that a newcomer can check against the category column. Ten topics split the finance
-    # articles into several topics of bare numbers.
+    # articles into several topics of bare numbers. The source decides the count only until the
+    # reader moves the slider.
     _start_topics = 6 if source.value == "Demo data" else 10
     n_topics = mo.ui.slider(
         2,
         30,
-        value=_model.n_topics if _model is not None else _start_topics,
+        value=_start("n_topics", _start_topics),
         step=1,
         label="Number of topics",
         show_value=True,
+        on_change=_keep("n_topics"),
     )
     max_features = mo.ui.number(
         100,
         20000,
-        value=_model.max_features if _model is not None else 5000,
+        value=_start("max_features", 5000),
         step=100,
         label="Max vocabulary",
+        on_change=_keep("max_features"),
     )
     min_df = mo.ui.number(
         1,
         100,
-        value=_model.min_df if _model is not None else 2,
+        value=_start("min_df", 2),
         step=1,
         label="Minimum document frequency",
+        on_change=_keep("min_df"),
     )
     max_df = mo.ui.slider(
         0.5,
         1.0,
-        value=_model.max_df if _model is not None else 0.95,
+        value=_start("max_df", 0.95),
         step=0.01,
         label="Maximum document frequency",
         show_value=True,
+        on_change=_keep("max_df"),
     )
     ngrams = mo.ui.dropdown(
         options={"Single words": "1", "Words and pairs": "1-2", "Pairs only": "2"},
-        value=_ngram_labels[_model.ngrams] if _model is not None else "Single words",
+        value=_ngram_labels[_start("ngrams", "1")],
         label="N-grams",
+        on_change=_keep("ngrams"),
     )
     # The seed is what makes a run repeatable. It already reached both models; it was only
     # invisible. A reader who has the corpus and the seed gets the same topics.
     random_seed = mo.ui.number(
         0,
         2**31 - 1,
-        value=_model.random_seed if _model is not None else 42,
+        value=_start("random_seed", 42),
         step=1,
         label="Random seed",
+        on_change=_keep("random_seed"),
     )
 
     def _reset(_value):
         set_loaded(None)
+        set_touched({})
         set_reset(lambda current: current + 1)
 
     reset_button = mo.ui.button(label="Reset recommended defaults", on_change=_reset)

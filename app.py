@@ -1090,10 +1090,17 @@ def _(display_result, get_selected, mo, set_selected):
 @app.cell(hide_code=True)
 def _(mo, selected_index, set_overrides):
     # The rename acts on the shared selection. A new selection rebuilds the input, so it starts
-    # empty. An empty name restores the automatic label.
+    # empty. An empty name restores the automatic label. The overrides apply in order, and a
+    # taken name gets a number. The latest rename therefore moves to the end, so the topic that
+    # the reader just renamed gets the number, not an earlier one.
     def _apply(_value):
         if selected_index is not None:
-            set_overrides(lambda current: {**current, selected_index: rename_input.value})
+            set_overrides(
+                lambda current: {
+                    **{index: name for index, name in current.items() if index != selected_index},
+                    selected_index: rename_input.value,
+                }
+            )
 
     rename_input = mo.ui.text(label="Rename the selected topic", placeholder="Economy")
     rename_button = mo.ui.button(label="Apply name", on_change=_apply)

@@ -603,16 +603,19 @@ def split_long_document(
 def segment_unit(mode: SplitMode, is_pdf: bool = False) -> str:
     """Name one segment in the singular, as the split rule makes it.
 
+    A PDF segment is not always a page. `extract_pdf_text` joins the pages with a blank line, and
+    a page can also hold a blank line of its own. The neutral noun stays true in both cases.
+
     >>> segment_unit("blank_lines"), segment_unit("lines"), segment_unit("whole")
     ('paragraph', 'line', 'document')
     >>> segment_unit("blank_lines", is_pdf=True)
-    'page'
+    'segment'
     """
     if mode == "lines":
         return "line"
     if mode == "whole":
         return "document"
-    return "page" if is_pdf else "paragraph"
+    return "segment" if is_pdf else "paragraph"
 
 
 def describe_analysis(
@@ -624,8 +627,10 @@ def describe_analysis(
 
     >>> describe_analysis(1, 327, "paragraph", "long_document")
     '1 file → 327 paragraphs → analysed as an ordered text'
-    >>> describe_analysis(1, 1, "page", "corpus")
-    '1 file → 1 page → analysed as independent segments'
+    >>> describe_analysis(1, 1, "segment", "corpus")
+    '1 file → 1 segment → analysed as independent segments'
+    >>> describe_analysis(1, 12, "paragraph", "long_document", "pasted text")
+    '1 pasted text → 12 paragraphs → analysed as an ordered text'
     >>> describe_analysis(3, 3, "document", "corpus")
     '3 files → 3 documents → analysed as independent segments'
     >>> describe_analysis(1, 295, "document", "corpus", "table")

@@ -460,6 +460,7 @@ def _(
     load_notices,
     mo,
     pd,
+    source,
     split_mode,
     stats,
     table,
@@ -491,7 +492,9 @@ def _(
             _seen = io.describe_analysis(1, len(corpus), "document", "corpus", "table")
         elif text_names is not None and len(text_names) == 1:
             _unit = io.segment_unit(split_mode.value, text_names[0].lower().endswith(".pdf"))
-            _seen = io.describe_analysis(1, len(corpus), _unit, analyse_as.value)
+            # Pasted text loads no file, so the line names the paste instead.
+            _origin = "pasted text" if source.value == "Paste text" else "file"
+            _seen = io.describe_analysis(1, len(corpus), _unit, analyse_as.value, _origin)
         elif text_names is not None:
             _seen = io.describe_analysis(len(text_names), len(corpus), "document", "corpus")
         else:

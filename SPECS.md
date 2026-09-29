@@ -162,7 +162,8 @@ When exactly one text is loaded, show **Analyse as**:
 
 The stored values stay `corpus` and `long_document`, so a saved `config.json` still loads. Under
 the input summary, one line says what the model sees, for example `1 file → 327 paragraphs →
-analysed as an ordered text`.
+analysed as an ordered text`. Pasted text reads `1 pasted text → …`. A PDF counts segments, not
+pages, because a page can hold more than one segment.
 
 Both modes use the same split control and the same `split_text()` function. The default split is
 on blank lines, which gives one segment per paragraph.

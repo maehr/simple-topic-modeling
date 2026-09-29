@@ -226,7 +226,11 @@ def test_saved_config_with_old_values_still_loads():
             (1, 327, "paragraph", "long_document"),
             "1 file → 327 paragraphs → analysed as an ordered text",
         ),
-        ((1, 1, "page", "corpus"), "1 file → 1 page → analysed as independent segments"),
+        ((1, 1, "segment", "corpus"), "1 file → 1 segment → analysed as independent segments"),
+        (
+            (1, 12, "paragraph", "long_document", "pasted text"),
+            "1 pasted text → 12 paragraphs → analysed as an ordered text",
+        ),
         ((2, 40, "line", "corpus"), "2 files → 40 lines → analysed as independent segments"),
         (
             (1, 9, "document", "corpus", "table"),
@@ -244,6 +248,6 @@ def test_segment_unit_follows_the_split_rule():
     from simple_topic_modeling.io import segment_unit
 
     assert segment_unit("blank_lines") == "paragraph"
-    assert segment_unit("blank_lines", is_pdf=True) == "page"
+    assert segment_unit("blank_lines", is_pdf=True) == "segment"
     assert segment_unit("lines", is_pdf=True) == "line"
     assert segment_unit("whole") == "document"

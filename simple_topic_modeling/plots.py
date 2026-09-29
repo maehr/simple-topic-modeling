@@ -7,7 +7,7 @@ later. Each function here is pure: it takes a result and returns a frame or an A
 from __future__ import annotations
 
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import altair as alt
 import numpy as np
@@ -171,18 +171,52 @@ def topic_map_frame(result: TopicModelResult, term_count: int = 5) -> pd.DataFra
     )
 
 
-def topic_map(result: TopicModelResult) -> alt.Chart:
+def _emphasis(selected: int | None, dim: float = 0.35) -> dict[str, Any]:
+    """Encode the selected topic by fill opacity and outline width, never by colour alone.
+
+    The frame needs a `selected` column of 0 and 1. The notebook hands the frame to Vega as CSV,
+    where a boolean turns into a truthy string, so the column holds integers. With no selection,
+    nothing is dimmed.
+
+    >>> sorted(_emphasis(0))
+    ['fillOpacity', 'strokeWidth']
+    >>> _emphasis(None)["fillOpacity"]["value"]
+    0.85
+    """
+    if selected is None:
+        return {"fillOpacity": alt.value(0.85), "strokeWidth": alt.value(0)}
+    return {
+        "fillOpacity": alt.condition("datum.selected === 1", alt.value(1.0), alt.value(dim)),
+        "strokeWidth": alt.condition("datum.selected === 1", alt.value(3), alt.value(0)),
+    }
+
+
+def _pick_topic() -> alt.Parameter:
+    """Build the click selection on `topic_id` that the notebook reads through the chart value.
+
+    >>> _pick_topic().param.select.fields
+    ['topic_id']
+    """
+    return alt.selection_point(fields=["topic_id"], on="click", clear=False)
+
+
+def topic_map(result: TopicModelResult, selected: int | None = None) -> alt.Chart:
     """Place each topic on the 2-D map. Bubble size is the prevalence.
+
+    A click selects a topic. The selected bubble keeps full opacity and gains an outline.
 
     >>> from simple_topic_modeling.result import _example_result
     >>> topic_map(_example_result()).to_dict()["mark"]["type"]
     'circle'
     """
-    frame = topic_map_frame(result)
+    frame = topic_map_frame(result).assign(
+        selected=lambda data: (data["topic_id"] == selected).astype(int)
+    )
     return (
         alt.Chart(frame, title="Topic map")
-        .mark_circle(opacity=0.65)
+        .mark_circle(stroke="#000")
         .encode(
+            **_emphasis(selected),
             x=alt.X("x:Q", axis=_blank_axis()),
             y=alt.Y("y:Q", axis=_blank_axis()),
             size=alt.Size("prevalence:Q", title="Prevalence", scale=alt.Scale(range=[100, 2000])),
@@ -193,22 +227,26 @@ def topic_map(result: TopicModelResult) -> alt.Chart:
                 alt.Tooltip("prevalence:Q", title="Prevalence", format=".1%"),
             ],
         )
+        .add_params(_pick_topic())
         .properties(height=380)
     )
 
 
-def prevalence_bars(result: TopicModelResult) -> alt.Chart:
-    """Rank the topics by how much of the corpus they cover.
+def prevalence_bars(result: TopicModelResult, selected: int | None = None) -> alt.Chart:
+    """Rank the topics by how much of the corpus they cover. A click selects a topic.
 
     >>> from simple_topic_modeling.result import _example_result
     >>> prevalence_bars(_example_result()).to_dict()["mark"]["type"]
     'bar'
     """
-    frame = topic_map_frame(result)
+    frame = topic_map_frame(result).assign(
+        selected=lambda data: (data["topic_id"] == selected).astype(int)
+    )
     return (
         alt.Chart(frame, title="Topic prevalence")
-        .mark_bar()
+        .mark_bar(stroke="#000")
         .encode(
+            **_emphasis(selected),
             x=alt.X("prevalence:Q", title="Share of the corpus", axis=alt.Axis(format="%")),
             y=alt.Y("topic:N", sort="-x", title=None),
             tooltip=[
@@ -217,6 +255,7 @@ def prevalence_bars(result: TopicModelResult) -> alt.Chart:
                 alt.Tooltip("prevalence:Q", title="Prevalence", format=".1%"),
             ],
         )
+        .add_params(_pick_topic())
         .properties(height=alt.Step(22))
     )
 
@@ -265,18 +304,25 @@ def similarity_long_frame(result: TopicModelResult) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def similarity_heatmap(result: TopicModelResult) -> alt.Chart:
+def similarity_heatmap(result: TopicModelResult, selected: int | None = None) -> alt.Chart:
     """Show the cosine similarity between every pair of topics.
+
+    The row and the column of the selected topic keep full opacity and gain an outline.
 
     >>> from simple_topic_modeling.result import _example_result
     >>> similarity_heatmap(_example_result()).to_dict()["mark"]["type"]
     'rect'
     """
     frame = similarity_long_frame(result)
+    name = result.topic_names[selected] if selected is not None else None
+    frame = frame.assign(
+        selected=((frame["topic_a"] == name) | (frame["topic_b"] == name)).astype(int)
+    )
     return (
         alt.Chart(frame, title="Topic similarity")
-        .mark_rect()
+        .mark_rect(stroke="#000")
         .encode(
+            **_emphasis(selected),
             x=alt.X("topic_a:N", title=None, axis=alt.Axis(labelAngle=-40)),
             y=alt.Y("topic_b:N", title=None),
             color=alt.Color(

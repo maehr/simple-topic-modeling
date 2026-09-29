@@ -202,3 +202,32 @@ def test_word_cloud_is_deterministic(result):
 
 def test_word_cloud_uses_the_renamed_topic_terms(result):
     assert word_cloud_png(result, 0) != word_cloud_png(result, 1)
+
+
+def test_selection_point_reads_topic_id_on_map_and_bars(result):
+    for chart in (topic_map(result), prevalence_bars(result)):
+        spec = _spec(chart)
+        assert spec["params"][0]["select"]["type"] == "point"
+        assert spec["params"][0]["select"]["fields"] == ["topic_id"]
+
+
+def test_selected_topic_is_marked_in_every_data_view(result):
+    for chart in (topic_map(result, 1), prevalence_bars(result, 1)):
+        spec = _spec(chart)
+        rows = spec["datasets"][spec["data"]["name"]]
+        assert [row["selected"] for row in rows] == [i == 1 for i in range(result.n_topics)]
+        assert "condition" in spec["encoding"]["fillOpacity"]
+        assert "condition" in spec["encoding"]["strokeWidth"]
+    heat = _spec(similarity_heatmap(result, 0))
+    rows = heat["datasets"][heat["data"]["name"]]
+    assert [row["selected"] for row in rows] == [
+        a == 0 or b == 0 for a in range(result.n_topics) for b in range(result.n_topics)
+    ]
+    assert "condition" in heat["encoding"]["fillOpacity"]
+
+
+def test_no_selection_dims_nothing(result):
+    for chart in (topic_map(result), prevalence_bars(result), similarity_heatmap(result)):
+        spec = _spec(chart)
+        assert spec["encoding"]["fillOpacity"]["value"] == 0.85
+        assert spec["encoding"]["strokeWidth"]["value"] == 0

@@ -2,8 +2,12 @@ import numpy as np
 
 from simple_topic_modeling.config import AppConfig, ModelConfig
 from simple_topic_modeling.metrics import (
+    DIAGNOSTIC_HELP,
+    compare_runs,
+    diagnostic_table,
     diagnostics,
     mean_pairwise_similarity,
+    run_summary,
     topic_diversity,
     topic_similarity,
 )
@@ -79,3 +83,62 @@ def test_a_clean_run_reports_the_numbers_without_a_quality_score(corpus, config)
     assert report["perplexity"] is None
     assert "score" not in report
     assert "quality" not in report
+
+
+def test_every_measure_has_a_help_sentence_without_a_threshold():
+    assert len(DIAGNOSTIC_HELP) == 8
+    for sentence in DIAGNOSTIC_HELP.values():
+        assert sentence.endswith(".")
+        assert "good" not in sentence.lower()
+
+
+def test_run_summary_keeps_the_scalars_and_a_label_with_the_seed(corpus, config):
+    summary = run_summary(fit_topic_model(corpus, config))
+    assert summary["label"] == "NMF · 3 topics · seed 42"
+    assert summary["model_type"] == "nmf"
+    assert summary["topic_count"] == 3
+    assert "notices" not in summary
+    assert "similarity_matrix" not in summary
+
+
+def test_run_summary_drops_the_seed_when_the_config_has_none():
+    assert run_summary(_example_result())["label"] == "NMF · 2 topics"
+
+
+def test_diagnostic_table_lists_every_measure_with_its_help(corpus, config):
+    table = diagnostic_table(run_summary(fit_topic_model(corpus, config)))
+    assert table["Measure"].tolist() == list(DIAGNOSTIC_HELP)
+    assert table["What it tells you"].tolist() == list(DIAGNOSTIC_HELP.values())
+    values = table.set_index("Measure")["This run"]
+    assert values["Documents used"] == f"{len(corpus):,}"
+    assert values["Perplexity"] == "—"
+    assert values["Reconstruction error"] != "—"
+
+
+def test_compare_runs_orders_the_runs_newest_first_with_unique_names(corpus, config):
+    summary = run_summary(fit_topic_model(corpus, config))
+    table = compare_runs([summary] * 4)
+    assert table.columns.tolist() == [
+        "Measure",
+        "This run",
+        "Run before",
+        "2 runs before",
+        "3 runs before",
+    ]
+    assert table["Measure"].tolist()[0] == "Settings"
+
+
+def test_compare_runs_shows_a_dash_for_the_other_model_type(corpus, config):
+    nmf = run_summary(fit_topic_model(corpus, config))
+    lda_config = AppConfig(model=ModelConfig(model_type="lda", n_topics=3, min_df=1))
+    lda = run_summary(fit_topic_model(corpus, lda_config))
+    table = compare_runs([lda, nmf]).set_index("Measure")
+    assert table.loc["Settings", "This run"].startswith("LDA")
+    assert table.loc["Reconstruction error", "This run"] == "—"
+    assert table.loc["Perplexity", "This run"] != "—"
+    assert table.loc["Reconstruction error", "Run before"] != "—"
+    assert table.loc["Perplexity", "Run before"] == "—"
+
+
+def test_compare_runs_of_no_runs_has_only_the_measure_column():
+    assert compare_runs([]).columns.tolist() == ["Measure"]

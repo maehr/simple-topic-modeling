@@ -969,6 +969,8 @@ def _(mo):
     get_result, set_result = mo.state(None)
     get_failure, set_failure = mo.state(None)
     get_overrides, set_overrides = mo.state({})
+    # The summaries of the last runs of this session, newest first. Only the fit cell writes it.
+    get_runs, set_runs = mo.state([])
     # One value holds the selected topic for every view. The dropdown, the topic map, the bars,
     # and the card buttons all write it. Every view reads it.
     get_selected, set_selected = mo.state(None)
@@ -979,11 +981,13 @@ def _(mo):
         get_overrides,
         get_renaming,
         get_result,
+        get_runs,
         get_selected,
         set_failure,
         set_overrides,
         set_renaming,
         set_result,
+        set_runs,
         set_selected,
     )
 
@@ -993,6 +997,7 @@ def _(
     FriendlyMessage,
     TopicError,
     get_run_request,
+    metrics,
     modeling,
     modelled_corpus,
     pending_config,
@@ -1001,6 +1006,7 @@ def _(
     set_overrides,
     set_result,
     set_run_request,
+    set_runs,
 ):
     # This cell holds the one expensive step. It fits only after the run button or a run request.
     # The cell clears the run request first, so one request starts one fit.
@@ -1012,7 +1018,12 @@ def _(
         set_run_request(False)
     if (run_button.value or _requested) and modelled_corpus is not None:
         try:
-            set_result(modeling.fit_topic_model(modelled_corpus, pending_config))
+            _fitted = modeling.fit_topic_model(modelled_corpus, pending_config)
+            set_result(_fitted)
+            # Keep a short summary of each successful fit, so Diagnostics can compare runs.
+            # This cell never reads the list. A read would re-run the fit on every append.
+            _summary = metrics.run_summary(_fitted)
+            set_runs(lambda _runs: [_summary, *_runs][:5])
             set_overrides({})
             set_failure(None)
         except TopicError as error:
@@ -1244,6 +1255,7 @@ def _(
     card_buttons,
     display_result,
     document_search,
+    get_runs,
     is_renaming,
     map_chart,
     metrics,
@@ -1453,25 +1465,34 @@ def _(
             _tabs["Metadata"] = mo.vstack(_panels)
 
         _report = metrics.diagnostics(display_result)
-        _numbers = pd.DataFrame(
-            {
-                "Documents used": [_report["documents_used"]],
-                "Vocabulary": [_report["vocabulary_size"]],
-                "Topics": [_report["topic_count"]],
-                "Topic diversity": [f"{_report['topic_diversity']:.2f}"],
-                "Mean pairwise similarity": [f"{_report['mean_pairwise_similarity']:.2f}"],
-                "Weak dominant scores": [f"{_report['weak_dominant_share']:.0%}"],
-            }
-        )
-        _quality = (
-            f"Reconstruction error: {_report['reconstruction_error']:.3f}"
-            if _report["reconstruction_error"] is not None
-            else f"Perplexity: {_report['perplexity']:.1f}"
+        _runs = get_runs()
+        _comparison = (
+            mo.vstack(
+                [
+                    mo.md("### Compare with earlier runs"),
+                    mo.md(
+                        "Each column is one run of this session, newest first. "
+                        "Compare runs on the same corpus. "
+                        "Reconstruction error belongs to NMF and perplexity to LDA. "
+                        "A dash marks a measure that the model type does not produce."
+                    ),
+                    mo.ui.table(metrics.compare_runs(_runs), selection=None, pagination=False),
+                ]
+            )
+            if len(_runs) > 1
+            else mo.md("*Change a setting and select Run model again to compare runs.*")
         )
         _tabs["Diagnostics"] = mo.vstack(
             [
-                mo.ui.table(_numbers, selection=None),
-                mo.md(f"**{_quality}**"),
+                mo.ui.table(
+                    metrics.diagnostic_table(metrics.run_summary(display_result)),
+                    selection=None,
+                    pagination=False,
+                    # The explanation is the point of this table, so it wraps instead of
+                    # ending in an ellipsis.
+                    wrapped_columns=["What it tells you"],
+                ),
+                _comparison,
                 *[
                     mo.callout(mo.md(f"**{_note.detail}** {_note.recovery}"), kind="warn")
                     for _note in _report["notices"]
@@ -1485,8 +1506,15 @@ def _(
                     {
                         "How to read the diagnostics": mo.md(
                             """
-                        These numbers describe the run. They are not a quality score. A model is
-                        good when its topics help you answer your question.
+                        These numbers describe this run. No value is good or bad on its own, and
+                        the app gives no quality score. Each row says what a higher value means.
+
+                        Compare runs on the same corpus. Change one setting, run the model again,
+                        and see which numbers move. A number that moves tells you that the
+                        setting matters. It does not tell you which run is better.
+
+                        A model is good when its topics help you answer your question. Read the
+                        topics and the passages to judge that.
                         """
                         )
                     }
@@ -1531,6 +1559,18 @@ def _(
 
                 **Topic diversity.** The share of top terms that occur in one topic only. A low
                 value means that the topics repeat each other.
+
+                **Mean pairwise similarity.** How much the term lists of two topics overlap,
+                averaged over all pairs of topics. A higher value means that the topics
+                resemble each other more.
+
+                **Reconstruction error.** NMF only. How far the topics fall short of rebuilding
+                the word counts of the documents. A higher value means a looser fit. Compare it
+                only between NMF runs on the same corpus.
+
+                **Perplexity.** LDA only. How surprised the model is by the words of the
+                documents. A higher value means a looser fit. Compare it only between LDA runs
+                on the same corpus.
 
                 **Document frequency.** The number of documents that hold a term. The app uses it
                 to drop a term that is too rare or too common.

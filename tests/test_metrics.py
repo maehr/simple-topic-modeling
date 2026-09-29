@@ -1,9 +1,18 @@
+from dataclasses import FrozenInstanceError
+
 import numpy as np
+import pytest
 
 from simple_topic_modeling.config import AppConfig, ModelConfig
 from simple_topic_modeling.metrics import (
+    DIAGNOSTIC_HELP,
+    RunSummary,
+    compare_runs,
+    corpus_fingerprint,
+    diagnostic_table,
     diagnostics,
     mean_pairwise_similarity,
+    run_summary,
     topic_diversity,
     topic_similarity,
 )
@@ -79,3 +88,104 @@ def test_a_clean_run_reports_the_numbers_without_a_quality_score(corpus, config)
     assert report["perplexity"] is None
     assert "score" not in report
     assert "quality" not in report
+
+
+def test_every_measure_has_a_help_sentence_without_a_threshold():
+    assert len(DIAGNOSTIC_HELP) == 8
+    for sentence in DIAGNOSTIC_HELP.values():
+        assert sentence.endswith(".")
+        assert not any(mark in sentence for mark in (". ", "? ", "! "))
+        assert "good" not in sentence.lower()
+
+
+def test_the_topic_help_says_that_the_reader_sets_the_count():
+    assert "asked for" in DIAGNOSTIC_HELP["Topics"]
+    assert "found" not in DIAGNOSTIC_HELP["Topics"]
+
+
+def test_the_nmf_help_names_the_tfidf_weights():
+    assert "TF-IDF" in DIAGNOSTIC_HELP["Reconstruction error"]
+
+
+def test_the_fingerprint_is_short_and_stable():
+    first = corpus_fingerprint(["alpha", "beta"], ["a", "b"])
+    assert len(first) == 12
+    assert first == corpus_fingerprint(["alpha", "beta"], ["a", "b"])
+
+
+def test_the_fingerprint_changes_with_a_text_an_id_or_the_order():
+    base = corpus_fingerprint(["alpha", "beta"], ["a", "b"])
+    assert corpus_fingerprint(["alpha", "gamma"], ["a", "b"]) != base
+    assert corpus_fingerprint(["alpha", "beta"], ["a", "c"]) != base
+    assert corpus_fingerprint(["beta", "alpha"], ["b", "a"]) != base
+
+
+def test_the_fingerprint_keeps_a_shifted_boundary_apart():
+    assert corpus_fingerprint(["ab", "c"], ["1", "2"]) != corpus_fingerprint(
+        ["a", "bc"], ["1", "2"]
+    )
+
+
+def test_run_summary_keeps_the_scalars_and_a_label_with_the_seed(corpus, config):
+    summary = run_summary(fit_topic_model(corpus, config))
+    assert isinstance(summary, RunSummary)
+    assert summary.label == "NMF · 3 topics · seed 42"
+    assert summary.model_type == "nmf"
+    assert summary.topic_count == 3
+    assert summary.corpus_fingerprint == corpus_fingerprint(corpus.documents, corpus.document_ids)
+    assert summary.perplexity is None
+    assert summary.reconstruction_error is not None
+
+
+def test_run_summary_reuses_a_report_that_the_caller_holds(corpus, config):
+    result = fit_topic_model(corpus, config)
+    assert run_summary(result, diagnostics(result)) == run_summary(result)
+
+
+def test_run_summary_is_frozen(corpus, config):
+    summary = run_summary(fit_topic_model(corpus, config))
+    with pytest.raises(FrozenInstanceError):
+        summary.label = "other"  # ty: ignore[invalid-assignment]
+
+
+def test_run_summary_drops_the_seed_when_the_config_has_none():
+    assert run_summary(_example_result()).label == "NMF · 2 topics"
+
+
+def test_diagnostic_table_lists_every_measure_with_its_help(corpus, config):
+    table = diagnostic_table(run_summary(fit_topic_model(corpus, config)))
+    assert table["Measure"].tolist() == list(DIAGNOSTIC_HELP)
+    assert table["What it tells you"].tolist() == list(DIAGNOSTIC_HELP.values())
+    values = table.set_index("Measure")["This run"]
+    assert values["Documents used"] == f"{len(corpus):,}"
+    assert values["Perplexity"] == "—"
+    assert values["Reconstruction error"] != "—"
+
+
+def test_compare_runs_orders_the_runs_newest_first_with_unique_names(corpus, config):
+    summary = run_summary(fit_topic_model(corpus, config))
+    table = compare_runs([summary] * 4)
+    assert table.columns.tolist() == [
+        "Measure",
+        "This run",
+        "Run before",
+        "2 runs before",
+        "3 runs before",
+    ]
+    assert table["Measure"].tolist()[0] == "Settings"
+
+
+def test_compare_runs_shows_a_dash_for_the_other_model_type(corpus, config):
+    nmf = run_summary(fit_topic_model(corpus, config))
+    lda_config = AppConfig(model=ModelConfig(model_type="lda", n_topics=3, min_df=1))
+    lda = run_summary(fit_topic_model(corpus, lda_config))
+    table = compare_runs([lda, nmf]).set_index("Measure")
+    assert table.loc["Settings", "This run"].startswith("LDA")
+    assert table.loc["Reconstruction error", "This run"] == "—"
+    assert table.loc["Perplexity", "This run"] != "—"
+    assert table.loc["Reconstruction error", "Run before"] != "—"
+    assert table.loc["Perplexity", "Run before"] == "—"
+
+
+def test_compare_runs_of_no_runs_has_only_the_measure_column():
+    assert compare_runs([]).columns.tolist() == ["Measure"]

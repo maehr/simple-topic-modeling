@@ -78,7 +78,23 @@ async def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
+    # The run request lets a control other than the run button start one fit.
+    # A later Rerun action reuses it.
+    get_source_choice, set_source_choice = mo.state("Demo data")
+    get_run_request, set_run_request = mo.state(False)
+    return get_run_request, get_source_choice, set_run_request, set_source_choice
+
+
+@app.cell(hide_code=True)
+def _(mo, set_run_request, set_source_choice):
+    def _run_demo(_value):
+        set_source_choice("Demo data")
+        set_run_request(True)
+
+    def _use_own_data(_value):
+        set_source_choice("Upload files")
+
+    _intro = mo.md(
         """
     # Simple Topic Modeling
 
@@ -90,10 +106,17 @@ def _(mo):
 
     A run takes a few seconds for a few hundred documents.
 
-    **A demo corpus is already loaded.** Go to **Step 3**. Select **Run model** to see a result.
+    Select **Run demo** to fit a model on the demo corpus now.
+    Select **Use my own data** to load your documents in Step 1.
     """
     )
-    return
+    # marimo holds a UI element by a weak reference. A button with a local name only is garbage
+    # collected after the cell runs, and marimo then drops its clicks. Give each button a global
+    # name.
+    run_demo_button = mo.ui.button(label="Run demo", kind="success", on_change=_run_demo)
+    own_data_button = mo.ui.button(label="Use my own data", kind="neutral", on_change=_use_own_data)
+    mo.vstack([_intro, mo.hstack([run_demo_button, own_data_button], justify="start")])
+    return own_data_button, run_demo_button
 
 
 @app.cell(hide_code=True)
@@ -120,8 +143,9 @@ def _(mo):
             1. **Add data.** Use the demo corpus, or load your own documents. You can also load
                one long text, such as a book, and choose **Analyse as: Long document**.
             2. **Configure.** Set the language, then set the number of topics.
-            3. **Run the model.** Select **Run model**. The app fits the model in this browser.
-            4. **Explore and export.** Read each topic, name it, then download the results.
+            3. **Run and explore.** Select **Run model**. The app fits the model in this browser.
+               Then read each topic and name it.
+            4. **Export.** Download the results.
 
             The demo corpus holds 295 French articles from two Swiss newspapers of 1914. A machine
             read the articles from a scan, so some words carry errors. A real archive looks like
@@ -171,10 +195,11 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo):
+def _(get_source_choice, mo, set_source_choice):
     source = mo.ui.radio(
         options=["Demo data", "Upload files", "Paste text"],
-        value="Demo data",
+        value=get_source_choice(),
+        on_change=set_source_choice,
         label="Where does your text come from?",
         inline=True,
     )
@@ -861,7 +886,7 @@ def _(
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md("""## Step 3 — Run the model""")
+    mo.md("""## Step 3 — Run and explore""")
     return
 
 
@@ -884,6 +909,7 @@ def _(mo):
 def _(
     FriendlyMessage,
     TopicError,
+    get_run_request,
     modeling,
     modelled_corpus,
     pending_config,
@@ -891,12 +917,17 @@ def _(
     set_failure,
     set_overrides,
     set_result,
+    set_run_request,
 ):
-    # This cell holds the one expensive step. It fits only when the run button was clicked.
+    # This cell holds the one expensive step. It fits only after the run button or a run request.
+    # The cell clears the run request first, so one request starts one fit.
     # marimo resets `run_button.value` to False after the dependent cells run, so a change to any
     # setting re-runs this cell without fitting and the previous result survives. A failed fit
     # stores a message and leaves the previous result in place.
-    if run_button.value and modelled_corpus is not None:
+    _requested = get_run_request()
+    if _requested:
+        set_run_request(False)
+    if (run_button.value or _requested) and modelled_corpus is not None:
         try:
             set_result(modeling.fit_topic_model(modelled_corpus, pending_config))
             set_overrides({})

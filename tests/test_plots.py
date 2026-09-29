@@ -16,6 +16,7 @@ from simple_topic_modeling.plots import (
     snippet,
     top_term_bars,
     top_term_frame,
+    topic_card_html,
     topic_cards,
     topic_map,
     word_cloud_png,
@@ -128,6 +129,19 @@ def test_similarity_heatmap_covers_the_full_matrix(result):
     assert _spec(similarity_heatmap(result))["mark"]["type"] == "rect"
 
 
+def test_similarity_heatmap_selects_by_topic_id_not_by_name(result):
+    twins = rename_topic(rename_topic(result, 0, "Same"), 1, "Same")
+    frame = similarity_heatmap(twins, 0).data
+    marked = frame[frame["selected"] == 1]
+    assert ((marked["topic_a_id"] == 0) | (marked["topic_b_id"] == 0)).all()
+    assert len(marked) == 2 * result.n_topics - 1
+
+
+def test_similarity_heatmap_marks_nothing_without_a_selection(result):
+    assert similarity_heatmap(result).data["selected"].sum() == 0
+    assert similarity_heatmap(result, -1).data["selected"].sum() == 0
+
+
 def test_similarity_scale_is_fixed_so_runs_compare(result):
     spec = _spec(similarity_heatmap(result))
     assert spec["encoding"]["color"]["scale"]["domain"] == [0, 1]
@@ -202,3 +216,39 @@ def test_word_cloud_is_deterministic(result):
 
 def test_word_cloud_uses_the_renamed_topic_terms(result):
     assert word_cloud_png(result, 0) != word_cloud_png(result, 1)
+
+
+def test_selection_point_reads_topic_id_on_map_and_bars(result):
+    for chart in (topic_map(result), prevalence_bars(result)):
+        spec = _spec(chart)
+        assert spec["params"][0]["select"]["type"] == "point"
+        assert spec["params"][0]["select"]["fields"] == ["topic_id"]
+
+
+def test_selected_topic_is_marked_in_every_data_view(result):
+    for chart in (topic_map(result, 1), prevalence_bars(result, 1)):
+        spec = _spec(chart)
+        rows = spec["datasets"][spec["data"]["name"]]
+        assert [row["selected"] for row in rows] == [i == 1 for i in range(result.n_topics)]
+        assert "condition" in spec["encoding"]["fillOpacity"]
+        assert "condition" in spec["encoding"]["strokeWidth"]
+    heat = _spec(similarity_heatmap(result, 0))
+    rows = heat["datasets"][heat["data"]["name"]]
+    assert [row["selected"] for row in rows] == [
+        a == 0 or b == 0 for a in range(result.n_topics) for b in range(result.n_topics)
+    ]
+    assert "condition" in heat["encoding"]["fillOpacity"]
+
+
+def test_no_selection_dims_nothing(result):
+    for chart in (topic_map(result), prevalence_bars(result), similarity_heatmap(result)):
+        spec = _spec(chart)
+        assert spec["encoding"]["fillOpacity"]["value"] == 0.85
+        assert spec["encoding"]["strokeWidth"]["value"] == 0
+
+
+def test_topic_card_html_shows_a_custom_name_verbatim():
+    card = topic_card_html("**Finance** _y_ <i>z</i>", "a <b>", "12.5%", 3)
+    assert "<strong>**Finance** _y_ &lt;i&gt;z&lt;/i&gt;</strong><br>" in card
+    assert "a &lt;b&gt;<br>12.5% of the corpus · 3 documents" in card
+    assert "(selected)" not in card

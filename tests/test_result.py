@@ -64,6 +64,15 @@ def test_renaming_does_not_change_the_original_result():
     assert renamed.topic_names[0] == "Economy"
 
 
+def test_renaming_never_gives_two_topics_the_same_name():
+    original = _example_result()
+    both = rename_topic(rename_topic(original, 0, "Same"), 1, "Same")
+    assert both.topic_names == ["Same", "Same (2)"]
+    # A topic may keep its own name. Only another topic's name counts as taken.
+    again = rename_topic(both, 0, "Same")
+    assert again.topic_names == ["Same", "Same (2)"]
+
+
 def test_renaming_keeps_every_other_field_identical():
     original = _example_result()
     renamed = rename_topic(original, 0, "Economy")

@@ -53,6 +53,7 @@ async def _():
     )
     from simple_topic_modeling.errors import FriendlyMessage, TopicError
     from simple_topic_modeling.preprocess import frequent_terms
+    from simple_topic_modeling.selection import resolve_topic, selected_topic_from_chart
     from simple_topic_modeling.stopwords import effective_stopwords
 
     return (
@@ -72,7 +73,9 @@ async def _():
         modeling,
         pd,
         plots,
+        resolve_topic,
         result_mod,
+        selected_topic_from_chart,
     )
 
 
@@ -933,7 +936,19 @@ def _(mo):
     get_result, set_result = mo.state(None)
     get_failure, set_failure = mo.state(None)
     get_overrides, set_overrides = mo.state({})
-    return get_failure, get_overrides, get_result, set_failure, set_overrides, set_result
+    # One value holds the selected topic for every view. The dropdown, the topic map, the bars,
+    # and the card buttons all write it. Every view reads it.
+    get_selected, set_selected = mo.state(None)
+    return (
+        get_failure,
+        get_overrides,
+        get_result,
+        get_selected,
+        set_failure,
+        set_overrides,
+        set_result,
+        set_selected,
+    )
 
 
 @app.cell(hide_code=True)
@@ -1001,34 +1016,115 @@ def _(display_result, get_failure, mo, pending_config):
 
 
 @app.cell(hide_code=True)
-def _(display_result, mo):
+def _(display_result, get_selected, resolve_topic):
+    # The stored selection can be stale after a new fit, so it is clamped to a valid topic.
+    selected_index = (
+        resolve_topic(get_selected(), len(display_result.topic_names))
+        if display_result is not None
+        else None
+    )
+    return (selected_index,)
+
+
+@app.cell(hide_code=True)
+def _(display_result, get_selected, mo, selected_index, set_selected):
+    def _choose(_value):
+        # Write only a changed value, so a redraw never starts a loop.
+        if _value is not None and _value != get_selected():
+            set_selected(_value)
+
     _options = (
         {name: number for number, name in enumerate(display_result.topic_names)}
         if display_result is not None
         else {}
     )
+    _current = (
+        display_result.topic_names[selected_index]
+        if display_result is not None and selected_index is not None
+        else None
+    )
     topic_select = mo.ui.dropdown(
-        options=_options, value=next(iter(_options), None), label="Selected topic"
+        options=_options, value=_current, label="Selected topic", on_change=_choose
     )
     return (topic_select,)
 
 
 @app.cell(hide_code=True)
-def _(display_result, mo, topic_select):
-    rename_input = mo.ui.text(label="Rename the selected topic", placeholder="Economy")
-    _view = mo.md("") if display_result is None or topic_select.value is None else rename_input
-    _view
-    return (rename_input,)
+def _(display_result, mo, plots, selected_index):
+    # marimo keeps only weak references to UI elements, so each chart has a global name.
+    # The charts are rebuilt with the selected topic, so every view shows the same highlight.
+    # A click on a bubble or a bar is read in the next cell.
+    map_chart = bars_chart = None
+    if display_result is not None:
+        map_chart = mo.ui.altair_chart(plots.topic_map(display_result, selected_index))
+        bars_chart = mo.ui.altair_chart(plots.prevalence_bars(display_result, selected_index))
+    return bars_chart, map_chart
 
 
 @app.cell(hide_code=True)
-def _(display_result, mo, rename_input, set_overrides, topic_select):
-    def _apply(_value):
-        if topic_select.value is not None:
-            set_overrides(lambda current: {**current, topic_select.value: rename_input.value})
+def _(display_result, get_selected, mo, set_selected):
+    def _pick(_index):
+        def _click(_count):
+            if _index != get_selected():
+                set_selected(_index)
+            return (_count or 0) + 1
 
-    _button = mo.ui.button(label="Apply name", on_change=_apply)
-    _button if display_result is not None else mo.md("")
+        return _click
+
+    # One button per card, held in a global name. The buttons stay when the selection changes.
+    # Each label carries the topic number, so a screen reader can tell the buttons apart. The
+    # number stays unique after a rename.
+    card_buttons = (
+        mo.ui.array(
+            [
+                mo.ui.button(label=f"Select topic {_number + 1}", on_click=_pick(_number), value=0)
+                for _number in range(len(display_result.topic_names))
+            ]
+        )
+        if display_result is not None
+        else None
+    )
+    return (card_buttons,)
+
+
+@app.cell(hide_code=True)
+def _(mo, selected_index, set_overrides):
+    # The rename acts on the shared selection. A new selection rebuilds the input, so it starts
+    # empty. An empty name restores the automatic label. The overrides apply in order, and a
+    # taken name gets a number. The latest rename therefore moves to the end, so the topic that
+    # the reader just renamed gets the number, not an earlier one.
+    def _apply(_value):
+        if selected_index is not None:
+            set_overrides(
+                lambda current: {
+                    **{index: name for index, name in current.items() if index != selected_index},
+                    selected_index: rename_input.value,
+                }
+            )
+
+    rename_input = mo.ui.text(label="Rename the selected topic", placeholder="Economy")
+    rename_button = mo.ui.button(label="Apply name", on_change=_apply)
+    return rename_button, rename_input
+
+
+@app.cell(hide_code=True)
+def _(
+    bars_chart,
+    display_result,
+    get_selected,
+    map_chart,
+    selected_topic_from_chart,
+    set_selected,
+):
+    # A chart click writes the shared selection. Both charts are rebuilt after each change, so
+    # their value is empty until the next click. The write happens only for a changed value.
+    if display_result is not None:
+        for _chart in (map_chart, bars_chart):
+            _picked = selected_topic_from_chart(
+                _chart.value, n_topics=len(display_result.topic_names)
+            )
+            if _picked is not None and _picked != get_selected():
+                set_selected(_picked)
     return
 
 
@@ -1047,13 +1143,19 @@ def _(display_result, mo):
 
 @app.cell(hide_code=True)
 def _(
+    bars_chart,
+    card_buttons,
     display_result,
     document_search,
+    map_chart,
     metrics,
     mo,
     pd,
     plots,
+    rename_button,
+    rename_input,
     score_filter,
+    selected_index,
     topic_filter,
     topic_select,
 ):
@@ -1062,17 +1164,46 @@ def _(
             "*No result yet. Go to **Step 3** and select **Run model** to build the topics.*"
         )
     else:
+        _cards = []
+        for _row in plots.topic_cards(display_result).itertuples():
+            _chosen = _row.topic_id == selected_index
+            _card = mo.vstack(
+                [
+                    # A custom name can hold Markdown characters, so the card shows it verbatim.
+                    mo.Html(
+                        plots.topic_card_html(
+                            _row.topic, _row.top_terms, _row.prevalence, _row.documents, _chosen
+                        )
+                    ),
+                    card_buttons[_row.topic_id],
+                ],
+                gap=0.5,
+            ).style(
+                {
+                    "border": f"{3 if _chosen else 1}px solid currentColor",
+                    "opacity": "1" if _chosen else "0.7",
+                    "padding": "0.75rem",
+                    "border-radius": "6px",
+                    "min-width": "14rem",
+                    "max-width": "18rem",
+                }
+            )
+            _cards.append(_card)
         _overview = mo.vstack(
             [
                 mo.md("### Topics at a glance"),
-                mo.ui.table(plots.topic_cards(display_result), selection=None, page_size=30),
-                mo.ui.altair_chart(plots.topic_map(display_result)),
-                mo.ui.altair_chart(plots.prevalence_bars(display_result)),
-                mo.ui.altair_chart(plots.similarity_heatmap(display_result)),
+                mo.md(
+                    "*Select a topic with its card button, a bubble on the map, a bar, or the"
+                    " dropdown. Every view then highlights the same topic.*"
+                ),
+                mo.hstack(_cards, justify="start", gap=1, wrap=True),
+                map_chart,
+                bars_chart,
+                mo.ui.altair_chart(plots.similarity_heatmap(display_result, selected_index)),
             ]
         )
 
-        _index = topic_select.value if topic_select.value is not None else 0
+        _index = selected_index
         # The fitted result, not the live control, decides the mode. A changed control only
         # raises the "Configuration changed" banner until the next run.
         _long = display_result.config.get("analyse_as") == "long_document"
@@ -1106,7 +1237,9 @@ def _(
             _position_view = []
         _topics = mo.vstack(
             [
-                topic_select,
+                mo.hstack(
+                    [topic_select, rename_input, rename_button], justify="start", align="end"
+                ),
                 mo.md(
                     f"**Prevalence:** {display_result.topic_prevalence[_index]:.1%} of the"
                     f" {'text' if _long else 'corpus'}"

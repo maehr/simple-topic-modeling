@@ -1022,6 +1022,8 @@ def _(
             set_result(_fitted)
             # Keep a short summary of each successful fit, so Diagnostics can compare runs.
             # This cell never reads the list. A read would re-run the fit on every append.
+            # The summary carries a fingerprint of the corpus that this fit used, so Diagnostics
+            # compares only runs on the same corpus.
             _summary = metrics.run_summary(_fitted)
             set_runs(lambda _runs: [_summary, *_runs][:5])
             set_overrides({})
@@ -1464,28 +1466,35 @@ def _(
         if _panels:
             _tabs["Metadata"] = mo.vstack(_panels)
 
+        # One call measures the run. The summary and the notices both read this report.
         _report = metrics.diagnostics(display_result)
-        _runs = get_runs()
+        _current = metrics.run_summary(display_result, _report)
+        # The table shows only the runs that fitted the same corpus as the shown run.
+        _runs = [
+            _run for _run in get_runs() if _run.corpus_fingerprint == _current.corpus_fingerprint
+        ]
         _comparison = (
             mo.vstack(
                 [
                     mo.md("### Compare with earlier runs"),
                     mo.md(
-                        "Each column is one run of this session, newest first. "
-                        "Compare runs on the same corpus. "
+                        "Each column is one run of this session on the same corpus, newest first. "
                         "Reconstruction error belongs to NMF and perplexity to LDA. "
+                        "Compare each one only between runs of the same model type. "
                         "A dash marks a measure that the model type does not produce."
                     ),
                     mo.ui.table(metrics.compare_runs(_runs), selection=None, pagination=False),
                 ]
             )
             if len(_runs) > 1
-            else mo.md("*Change a setting and select Run model again to compare runs.*")
+            else mo.md(
+                "*Change a setting and select Run model again to compare runs on the same corpus.*"
+            )
         )
         _tabs["Diagnostics"] = mo.vstack(
             [
                 mo.ui.table(
-                    metrics.diagnostic_table(metrics.run_summary(display_result)),
+                    metrics.diagnostic_table(_current),
                     selection=None,
                     pagination=False,
                     # The explanation is the point of this table, so it wraps instead of
@@ -1565,7 +1574,7 @@ def _(
                 resemble each other more.
 
                 **Reconstruction error.** NMF only. How far the topics fall short of rebuilding
-                the word counts of the documents. A higher value means a looser fit. Compare it
+                the TF-IDF weights of the documents. A higher value means a looser fit. Compare it
                 only between NMF runs on the same corpus.
 
                 **Perplexity.** LDA only. How surprised the model is by the words of the

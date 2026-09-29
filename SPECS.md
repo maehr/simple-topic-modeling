@@ -525,14 +525,18 @@ Show descriptive aids only:
 - dominant-topic score distribution,
 - NMF reconstruction error or LDA perplexity when available.
 
-Show one plain sentence beside each number. The sentence says what a higher value means. It sets no
-threshold for a good or a bad value. Reconstruction error belongs to NMF and perplexity to LDA, so
-the sentence says to compare each one only between runs of the same model type.
+Show exactly one plain sentence beside each number. The sentence says what a higher value means. It
+sets no threshold for a good or a bad value. The topic count is the number that the user asked for.
+Reconstruction error belongs to NMF and perplexity to LDA, so the sentence names the model type and
+the comparison text says to compare each one only between runs of the same model type.
 
-Keep a short summary of each successful run of the session, up to five. Show them side by side in a
-run comparison table, newest first, with one row per measure. A run of the other model type shows a
-dash for reconstruction error or perplexity. Before a second run exists, tell the user to change a
-setting and run the model again. The list lives in the session only and is not saved.
+Keep a short summary of each successful run of the session, up to five. Each summary holds a short
+fingerprint of the corpus that the run fitted. Show the runs side by side in a run comparison table,
+newest first, with one row per measure. The table shows only the runs whose fingerprint equals the
+fingerprint of the shown run, so a change of the data starts a new comparison. A run of the other
+model type shows a dash for reconstruction error or perplexity. Before a second run on the same
+corpus exists, tell the user to change a setting and run the model again. The list lives in the
+session only and is not saved.
 
 Friendly warnings may say:
 

@@ -117,16 +117,20 @@ def _(mo, set_run_request, set_source_choice):
 
     A run takes a few seconds for a few hundred documents.
 
-    Select **Run demo** to fit a model on 295 newspaper articles of 1914 now.
-    Select **Run book demo** to see where each topic occurs in one book of 1792.
+    Select **Newspaper Corpus demo** to fit a model on 295 newspaper articles of 1914 now.
+    Select **Single Book demo** to see where each topic occurs in one book of 1792.
     Select **Use my own data** to load your documents in Step 1.
     """
     )
     # marimo holds a UI element by a weak reference. A button with a local name only is garbage
     # collected after the cell runs, and marimo then drops its clicks. Give each button a global
     # name.
-    run_demo_button = mo.ui.button(label="Run demo", kind="success", on_change=_run_demo)
-    run_book_button = mo.ui.button(label="Run book demo", kind="success", on_change=_run_book_demo)
+    run_demo_button = mo.ui.button(
+        label="Newspaper Corpus demo", kind="success", on_change=_run_demo
+    )
+    run_book_button = mo.ui.button(
+        label="Single Book demo", kind="success", on_change=_run_book_demo
+    )
     own_data_button = mo.ui.button(label="Use my own data", kind="neutral", on_change=_use_own_data)
     mo.vstack(
         [
@@ -200,7 +204,7 @@ def _(mo):
 
             Load the text as one TXT, Markdown, HTML, or text-based PDF file, or paste it. One PDF
             opens in this mode. A PDF segment is usually one page, not one paragraph. Select
-            **Run book demo** to see this mode on a whole book.
+            **Single Book demo** to see this mode on a whole book.
 
             In **Independent segments** mode, the segments are unrelated documents, and their order
             is lost.
@@ -1113,7 +1117,7 @@ def _(get_overrides, get_result, result_mod):
 @app.cell(hide_code=True)
 def _(config_changed, display_result, get_failure, mo, pending_config, set_run_request):
     # The rerun button needs a global name: marimo holds a UI element by a weak reference.
-    # It sets the same run request as Run demo, and the fit cell clears that request.
+    # It sets the same run request as the demo buttons, and the fit cell clears that request.
     rerun_button = mo.ui.button(
         label="Rerun",
         kind="warn",

@@ -28,7 +28,7 @@ Version 1 receives no further work. Its code stays at the tag
 ## The demos
 
 The app opens with two demos, so you can see a real result before you load your own documents.
-**Run demo** fits the newspaper demo. **Run book demo** fits the book demo.
+**Newspaper Corpus demo** fits the newspaper demo. **Single Book demo** fits the book demo.
 
 ### Newspapers of 1914
 
@@ -77,8 +77,8 @@ model API. The app builds every download in your browser.
 
 ## What it does
 
-1. Add a corpus. Drag files in, paste text, or load a demo. Select **Run demo** or **Run book
-   demo** to fit a model on a demo in one step.
+1. Add a corpus. Drag files in, paste text, or load a demo. Select **Newspaper Corpus demo** or
+   **Single Book demo** to fit a model on a demo in one step.
 2. Choose a language. Edit the stop words when you need to.
 3. Choose a model and its parameters.
 4. Select **Run model**. The app fits the model in your browser.
@@ -89,9 +89,9 @@ model API. The app builds every download in your browser.
 Step 2 shows the model and the number of topics. The other parameters wait in a closed **Advanced
 settings** panel.
 
-The app fits a model only when you select **Run model**, **Run demo**, **Run book demo**, or
-**Rerun**. A changed setting does not
-start a new fit. The app keeps the last result until a new fit succeeds.
+The app fits a model only when you select **Run model**, **Newspaper Corpus demo**,
+**Single Book demo**, or **Rerun**. A changed setting does not start a new fit. The app keeps the
+last result until a new fit succeeds.
 
 ## What it reads
 

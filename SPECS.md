@@ -36,9 +36,9 @@ Requirements:
 
 - Show an intro above Step 1. Name the app. State what it finds. State what the reader gets. State
   the length of a run.
-- Show three primary actions above Step 1. **Run demo** selects the newspaper demo and fits the
-  model with the current settings. **Run book demo** selects the book demo and fits it the same
-  way. **Use my own data** selects the upload source.
+- Show three primary actions above Step 1. **Newspaper Corpus demo** selects the newspaper demo
+  and fits the model with the current settings. **Single Book demo** selects the book demo and fits
+  it the same way. **Use my own data** selects the upload source.
 - Keep the privacy callout under the intro.
 - Show two closed accordions. **How to use this tool** holds the four steps and describes the two
   demos. **What is a topic model?** explains a topic, a term, and a score without jargon.
@@ -398,7 +398,7 @@ Show a summary before fitting, e.g.:
 
 Primary button: **Run model**.
 
-**Run demo** and **Run book demo** fit with the same rules.
+**Newspaper Corpus demo** and **Single Book demo** fit with the same rules.
 
 Changing settings after a successful run shows:
 
@@ -695,7 +695,7 @@ Performance rules:
 
 - keep matrices sparse,
 - do not densify the full document-term matrix,
-- fit only on **Run model**, **Run demo**, **Run book demo**, or **Rerun**,
+- fit only on **Run model**, **Newspaper Corpus demo**, **Single Book demo**, or **Rerun**,
 - cache derived coordinates/similarities per run,
 - use snippets rather than full text in tables,
 - sample scatter-plot points if rendering becomes slow without changing model results.

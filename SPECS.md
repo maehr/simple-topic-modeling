@@ -46,6 +46,8 @@ Requirements:
 - Show a **Glossary** accordion under the result tabs. Define topic, term, prevalence, dominant
   score, topic diversity, document frequency, n-gram, and TF-IDF.
 - Point each empty state at the control that fills it.
+- Show a **How to** text above the **About** text in the sidebar. Write it in Simplified Technical
+  English. Give the steps for a demo, for own data, for a better model, and for the export.
 - Show the **About** text in the sidebar, so it stays in view on every step. Name the author and
   the licence. Describe and link the two demos. Link the repository, the issue tracker, and the
   contribution guidelines. Keep one copy of the text only.

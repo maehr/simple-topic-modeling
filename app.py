@@ -1747,10 +1747,43 @@ def _(AppConfig, display_result, exports, include_text, mo):
 def _(mo):
     # The sidebar stays in view on every step, so a reader finds the author, the licence, and the
     # sources without scrolling to the end of a long page. This is the only copy of the text.
+    # The How to text uses Simplified Technical English: short sentences, one instruction each.
     mo.sidebar(
         [
             mo.md(
                 """
+            ### How to
+
+            #### Use a demo
+
+            1. Click **Newspaper Corpus demo** or **Single Book demo**.
+            2. Wait. The app loads the text and makes the model.
+            3. Read the results in Step 3. Start with the **Overview** tab.
+
+            #### Use your own data
+
+            1. Click **Use my own data**.
+            2. In Step 1, drop your files in the box, or paste your text.
+            3. Use one CSV, TSV, JSON, or JSONL file for a table. Use one row for each document.
+            4. Use one or more TXT or PDF files for texts. Each file is one document.
+            5. For one long text, set **Analyse as** to **Ordered text**.
+            6. In Step 2, set the language. Keep the other settings for the first run.
+            7. In Step 3, click **Run model**.
+
+            #### Make the topics better
+
+            1. Read the terms of each topic in the **Topics** tab.
+            2. Type the words that you do not want in **Add stop words**.
+            3. Change the **Number of topics**.
+            4. Click **Rerun**. Compare the runs in the **Diagnostics** tab.
+
+            #### Keep your work
+
+            1. In Step 4, click **Download complete research package (.zip)**.
+            2. To do the same run again, load its `config.json` in Step 2.
+
+            The app does not send your data to a server. All work occurs in this browser.
+
             ### About
 
             [Moritz Mähr](https://github.com/maehr) wrote Simple Topic Modeling. It is free

@@ -52,6 +52,7 @@ async def _():
         PreprocessConfig,
         StopWordConfig,
         config_changed,
+        config_from_upload,
     )
     from simple_topic_modeling.errors import FriendlyMessage, TopicError
     from simple_topic_modeling.preprocess import frequent_terms
@@ -68,6 +69,7 @@ async def _():
         StopWordConfig,
         TopicError,
         config_changed,
+        config_from_upload,
         effective_stopwords,
         exports,
         frequent_terms,
@@ -87,7 +89,7 @@ async def _():
 def _(mo):
     # The run request lets a control other than the run button start one fit.
     # A later Rerun action reuses it.
-    get_source_choice, set_source_choice = mo.state("Demo data")
+    get_source_choice, set_source_choice = mo.state("Demo: newspapers")
     get_run_request, set_run_request = mo.state(False)
     return get_run_request, get_source_choice, set_run_request, set_source_choice
 
@@ -95,7 +97,11 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo, set_run_request, set_source_choice):
     def _run_demo(_value):
-        set_source_choice("Demo data")
+        set_source_choice("Demo: newspapers")
+        set_run_request(True)
+
+    def _run_book_demo(_value):
+        set_source_choice("Demo: book")
         set_run_request(True)
 
     def _use_own_data(_value):
@@ -113,17 +119,28 @@ def _(mo, set_run_request, set_source_choice):
 
     A run takes a few seconds for a few hundred documents.
 
-    Select **Run demo** to fit a model on the demo corpus now.
+    Select **Newspaper Corpus demo** to fit a model on 295 newspaper articles of 1914 now.
+    Select **Single Book demo** to see where each topic occurs in one book of 1792.
     Select **Use my own data** to load your documents in Step 1.
     """
     )
     # marimo holds a UI element by a weak reference. A button with a local name only is garbage
     # collected after the cell runs, and marimo then drops its clicks. Give each button a global
     # name.
-    run_demo_button = mo.ui.button(label="Run demo", kind="success", on_change=_run_demo)
+    run_demo_button = mo.ui.button(
+        label="Newspaper Corpus demo", kind="success", on_change=_run_demo
+    )
+    run_book_button = mo.ui.button(
+        label="Single Book demo", kind="success", on_change=_run_book_demo
+    )
     own_data_button = mo.ui.button(label="Use my own data", kind="neutral", on_change=_use_own_data)
-    mo.vstack([_intro, mo.hstack([run_demo_button, own_data_button], justify="start")])
-    return own_data_button, run_demo_button
+    mo.vstack(
+        [
+            _intro,
+            mo.hstack([run_demo_button, run_book_button, own_data_button], justify="start"),
+        ]
+    )
+    return own_data_button, run_book_button, run_demo_button
 
 
 @app.cell(hide_code=True)
@@ -147,16 +164,20 @@ def _(mo):
         {
             "How to use this tool": mo.md(
                 """
-            1. **Add data.** Use the demo corpus, or load your own documents. You can also load
-               one long text, such as a book, and choose **Analyse as: Ordered text**.
+            1. **Add data.** Use a demo, or load your own documents. You can also load one long
+               text, such as a book, and choose **Analyse as: Ordered text**.
             2. **Configure.** Set the language, then set the number of topics.
             3. **Run and explore.** Select **Run model**. The app fits the model in this browser.
                Then read each topic and name it.
             4. **Export.** Download the research package, or single files.
 
-            The demo corpus holds 295 French articles from two Swiss newspapers of 1914. A machine
-            read the articles from a scan, so some words carry errors. A real archive looks like
-            this.
+            The newspaper demo holds 295 French articles from two Swiss newspapers of 1914. A
+            machine read the articles from a scan, so some words carry errors. A real archive
+            looks like this.
+
+            The book demo is one English book: Mary Wollstonecraft, *A Vindication of the Rights
+            of Woman* (1792). The app splits it into paragraphs and keeps their order. The results
+            show where each topic occurs in the book.
             """
             ),
             "What is a topic model?": mo.md(
@@ -184,7 +205,8 @@ def _(mo):
             best. Use this mode for a book, a thesis, a report, or a transcript.
 
             Load the text as one TXT, Markdown, HTML, or text-based PDF file, or paste it. One PDF
-            opens in this mode. A PDF segment is usually one page, not one paragraph.
+            opens in this mode. A PDF segment is usually one page, not one paragraph. Select
+            **Single Book demo** to see this mode on a whole book.
 
             In **Independent segments** mode, the segments are unrelated documents, and their order
             is lost.
@@ -204,7 +226,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(get_source_choice, mo, set_source_choice):
     source = mo.ui.radio(
-        options=["Demo data", "Upload files", "Paste text"],
+        options=["Demo: newspapers", "Demo: book", "Upload files", "Paste text"],
         value=get_source_choice(),
         on_change=set_source_choice,
         label="Where does your text come from?",
@@ -254,9 +276,9 @@ def _(mo, source):
 
 @app.cell(hide_code=True)
 def _(exports, io, mo, source):
-    # The demo corpus is the one file a reader needs to repeat a demo run. It ships inside the
+    # The demo file is the one file a reader needs to repeat a demo run. It ships inside the
     # wheel, so the download reads it from the package and never from the network.
-    if source.value == "Demo data":
+    if source.value == "Demo: newspapers":
         _demo = mo.vstack(
             [
                 mo.download(
@@ -267,6 +289,22 @@ def _(exports, io, mo, source):
                 mo.md(
                     "*295 articles from the* Journal de Genève *and the* Gazette de Lausanne *of"
                     " 1914. See `NOTICE` for the source and the licence.*"
+                ),
+            ]
+        )
+    elif source.value == "Demo: book":
+        _demo = mo.vstack(
+            [
+                mo.download(
+                    data=io.demo_text().encode("utf-8"),
+                    filename=io.DEMO_TEXT_NAME,
+                    label="Download the demo text",
+                    mimetype="text/plain",
+                ),
+                mo.md(
+                    "*Mary Wollstonecraft,* A Vindication of the Rights of Woman *(1792), from"
+                    " Project Gutenberg. The text is public domain. See `NOTICE` for the"
+                    " source.*"
                 ),
             ]
         )
@@ -287,8 +325,11 @@ def _(TopicError, file_input, io, paste_input, source):
     # A PDF that fails raises here, so the message takes the existing load-error path. The fit
     # state stays untouched, so the last result survives a bad PDF.
     try:
-        if source.value == "Demo data":
+        if source.value == "Demo: newspapers":
             table = io.demo_table()
+        elif source.value == "Demo: book":
+            text_documents = [io.demo_text()]
+            text_names = [io.DEMO_TEXT_NAME]
         elif source.value == "Upload files":
             _uploads = [io.UploadedFile(item.name, item.contents) for item in file_input.value]
             _plan = io.classify_uploads(_uploads)
@@ -311,10 +352,10 @@ def _(TopicError, file_input, io, paste_input, source):
 
 
 @app.cell(hide_code=True)
-def _(MODE_LABELS, get_loaded, mo, text_names):
+def _(MODE_LABELS, get_loaded, mo, source, text_names):
     # These two controls apply to one text only. A loaded config.json from a run on one text
-    # restores them, so a reader splits the text exactly as the author did. Otherwise one PDF
-    # opens as an ordered text, and any other text opens as independent segments.
+    # restores them, so a reader splits the text exactly as the author did. Otherwise the book
+    # demo and one PDF open as an ordered text, and any other text opens as independent segments.
     _loaded = get_loaded()
     _config = _loaded[0] if _loaded is not None else None
     _one_pdf = (
@@ -323,7 +364,7 @@ def _(MODE_LABELS, get_loaded, mo, text_names):
     if _config is not None and _config.split_mode is not None:
         _start_mode = _config.analyse_as
     else:
-        _start_mode = "long_document" if _one_pdf else "corpus"
+        _start_mode = "long_document" if _one_pdf or source.value == "Demo: book" else "corpus"
     _split_labels = {
         "whole": "Whole file is one document",
         "blank_lines": "Split on blank lines",
@@ -395,7 +436,7 @@ def _(analyse_as, mo, split_mode, table, text_documents, text_names):
     elif text_names:
         _controls = mo.md(f"**{len(text_names)} files.** One file is one document.")
     else:
-        _controls = mo.md("*No data yet. Choose **Demo data** above to load the demo corpus.*")
+        _controls = mo.md("*No data yet. Choose a demo above, or load your own documents.*")
     _controls
     return date_column, group_column, id_column, text_column
 
@@ -617,31 +658,54 @@ def _(config_upload, get_loaded, mo):
 
 
 @app.cell(hide_code=True)
-def _(LANGUAGE_LABELS, get_loaded, get_reset, mo):
+def _(LANGUAGE_LABELS, get_loaded, get_reset, get_touched, mo, set_touched, source):
     get_reset()
     _loaded = get_loaded()
     _config = _loaded[0] if _loaded is not None else None
     _stop = _config.stop_words if _config is not None else None
+    _touched = get_touched()
+
+    def _start(field, loaded, default):
+        # The reader's own choice wins over a loaded config.json, which wins over the default.
+        if field in _touched:
+            return _touched[field]
+        return loaded if _config is not None else default
+
+    def _keep(field):
+        # A change of the data source rebuilds these controls. The stored value survives it.
+        def _store(value):
+            set_touched(lambda current: {**current, field: value})
+
+        return _store
+
+    # The book demo is English. Every other source starts on French, the newspaper demo.
+    _start_language = "en" if source.value == "Demo: book" else "fr"
     language = mo.ui.dropdown(
         options={label: code for code, label in LANGUAGE_LABELS.items()},
-        value=LANGUAGE_LABELS[_config.language] if _config is not None else "French",
+        value=LANGUAGE_LABELS[
+            _start("language", _config.language if _config else None, _start_language)
+        ],
         label="Language",
+        on_change=_keep("language"),
     )
     use_base = mo.ui.checkbox(
-        value=_stop.use_base_list if _stop is not None else True,
+        value=_start("use_base_list", _stop.use_base_list if _stop else None, True),
         label="Use the base stop-word list",
+        on_change=_keep("use_base_list"),
     )
     added_words = mo.ui.text_area(
         label="Add stop words",
-        value=_stop.added if _stop is not None else "",
+        value=_start("added", _stop.added if _stop else None, ""),
         placeholder="survey, january, ltd",
         rows=3,
+        on_change=_keep("added"),
     )
     keep_words = mo.ui.text_area(
         label="Always keep these words",
-        value=_stop.always_keep if _stop is not None else "",
+        value=_start("always_keep", _stop.always_keep if _stop else None, ""),
         placeholder="growth",
         rows=3,
+        on_change=_keep("always_keep"),
     )
     _help = mo.accordion(
         {
@@ -650,8 +714,8 @@ def _(LANGUAGE_LABELS, get_loaded, get_reset, mo):
             Choose the main language of your documents. This mainly changes the common words that
             the app ignores, such as *the*, *und*, *le*, *di*, or *el*.
 
-            The demo corpus is French, so the app starts on French. Change this when you load
-            your own documents.
+            The newspaper demo is French, so the app starts on French. The book demo is English,
+            so it starts on English. Change this when you load your own documents.
 
             A mixed-language corpus can turn the base list off and add its own words.
 
@@ -762,7 +826,11 @@ def _(get_loaded, get_reset, get_touched, mo, set_loaded, set_reset, set_touched
     # that a newcomer can check against the category column. Ten topics split the finance
     # articles into several topics of bare numbers. The source decides the count only until the
     # reader moves the slider.
-    _start_topics = 6 if source.value == "Demo data" else 10
+    # The book demo starts at eight. A sweep from 5 to 12 topics with NMF gave eight distinct
+    # themes at eight: the sexes, duty to parents, rights and civil duties, reason and God,
+    # education, Rousseau, modesty, and the author's own transitions. Six topics merge reason
+    # with love and life. At ten, one topic holds only the 7 paragraphs of the dedication.
+    _start_topics = {"Demo: newspapers": 6, "Demo: book": 8}.get(source.value, 10)
     n_topics = mo.ui.slider(
         2,
         30,
@@ -850,14 +918,13 @@ def _(
             )
         }
     )
-    _note = (
-        mo.md(
-            "*The newspaper sorted the demo articles into six sections, so the app starts at six"
-            " topics. Move the slider to see the themes split or merge.*"
-        )
-        if source.value == "Demo data"
-        else mo.md("")
-    )
+    _notes = {
+        "Demo: newspapers": "*The newspaper sorted the demo articles into six sections, so the"
+        " app starts at six topics. Move the slider to see the themes split or merge.*",
+        "Demo: book": "*The book demo starts at eight topics. Each one follows a theme of the"
+        " argument. Move the slider to see the themes split or merge.*",
+    }
+    _note = mo.md(_notes.get(source.value, ""))
     _advanced = mo.accordion(
         {
             "Advanced settings": mo.vstack(
@@ -1052,7 +1119,7 @@ def _(get_overrides, get_result, result_mod):
 @app.cell(hide_code=True)
 def _(config_changed, display_result, get_failure, mo, pending_config, set_run_request):
     # The rerun button needs a global name: marimo holds a UI element by a weak reference.
-    # It sets the same run request as Run demo, and the fit cell clears that request.
+    # It sets the same run request as the demo buttons, and the fit cell clears that request.
     rerun_button = mo.ui.button(
         label="Rerun",
         kind="warn",
@@ -1689,14 +1756,20 @@ def _(mo):
     software under the
     [AGPL-3.0](https://github.com/maehr/simple-topic-modeling/blob/main/LICENSE).
 
-    **The demo corpus.** The corpus holds 295 articles from the *Journal de Genève* and the
+    **The newspaper demo.** The corpus holds 295 articles from the *Journal de Genève* and the
     *Gazette de Lausanne* of 1914. The Digital Humanities Laboratory of the EPFL digitised the
     historical archive of *Le Temps*. It published the year 1914 under CC BY 4.0, for the 2015
     Swiss Open Cultural Data Hackathon. The articles are anonymous newspaper text from 1914, so
     they left copyright in 1985. The
-    [project page](https://hack.glam.opendata.ch/project/234) holds the archive, and
+    [project page](https://hack.glam.opendata.ch/project/234) holds the archive.
+
+    **The book demo.** Mary Wollstonecraft, *A Vindication of the Rights of Woman* (1792), from
+    [Project Gutenberg](https://www.gutenberg.org/ebooks/3420). The author died in 1797, so the
+    work is in the public domain. A build script removes the Project Gutenberg header and licence,
+    and keeps each sentence of the work.
+
     [`NOTICE`](https://github.com/maehr/simple-topic-modeling/blob/main/NOTICE) holds the full
-    statement.
+    statement for both demos.
 
     **Take part.** [Report a problem or ask for a
     feature](https://github.com/maehr/simple-topic-modeling/issues). Read the [contribution

@@ -33,6 +33,7 @@ from simple_topic_modeling.errors import (
 )
 
 __all__ = [
+    "DEMO_TEXT_NAME",
     "MIN_PDF_CHARACTERS",
     "Corpus",
     "CorpusStats",
@@ -48,6 +49,7 @@ __all__ = [
     "corpus_stats",
     "decode_text",
     "demo_table",
+    "demo_text",
     "describe_analysis",
     "detect_kind",
     "extract_pdf_text",
@@ -753,6 +755,32 @@ def demo_table() -> pd.DataFrame:
     """
     resource = files("simple_topic_modeling") / "data" / "demo_corpus.csv"
     return pd.read_csv(io.StringIO(resource.read_text(encoding="utf-8")))
+
+
+DEMO_TEXT_NAME = "wollstonecraft_1792.txt"
+"""The file name of the book demo. Each segment identifier starts with it."""
+
+
+def demo_text() -> str:
+    """Read the book demo that ships inside the package.
+
+    The text is Mary Wollstonecraft, *A Vindication of the Rights of Woman* (1792). It is public
+    domain. `NOTICE` records the source. `scripts/build_demo_text.py` rebuilds the file, with one
+    paragraph per line and a blank line between paragraphs.
+
+    The app never fetches this file over the network, so it works offline in the browser.
+
+    >>> text = demo_text()
+    >>> segments, ids, _ = split_long_document(text, DEMO_TEXT_NAME)
+    >>> len(segments) > 500
+    True
+    >>> ids[0]
+    'wollstonecraft_1792.txt#1'
+    >>> "Gutenberg" in text
+    False
+    """
+    resource = files("simple_topic_modeling") / "data" / "demo_text.txt"
+    return resource.read_text(encoding="utf-8")
 
 
 LARGE_DOCUMENT_COUNT = 10_000

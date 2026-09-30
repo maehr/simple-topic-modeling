@@ -46,8 +46,11 @@ Requirements:
 - Show a **Glossary** accordion under the result tabs. Define topic, term, prevalence, dominant
   score, topic diversity, document frequency, n-gram, and TF-IDF.
 - Point each empty state at the control that fills it.
-- Show an **About** section at the end. Name the author. Describe and link the two demos. Link
-  the repository, the issue tracker, and the contribution guidelines.
+- Show a **How to** text above the **About** text in the sidebar. Write it in Simplified Technical
+  English. Give the steps for a demo, for own data, for a better model, and for the export.
+- Show the **About** text in the sidebar, so it stays in view on every step. Name the author and
+  the licence. Describe and link the two demos. Link the repository, the issue tracker, and the
+  contribution guidelines. Keep one copy of the text only.
 
 ### Step 1 — Add data
 
@@ -212,8 +215,8 @@ Configuration has two sections: **Language & cleaning** and **Model**.
 
 ### Step 3 — Run and explore
 
-Step 3 opens with the tabs. The **Run** heading, the summary, and **Run model** sit in a sidebar
-that stays in view while the page scrolls. See Run behavior.
+Step 3 opens with the **Run** heading, the summary, and **Run model**. The tabs follow. The
+*Configuration changed* notice holds a **Rerun** button. See Run behavior.
 
 Tabs:
 

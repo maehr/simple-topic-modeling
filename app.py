@@ -1023,11 +1023,10 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(corpus, mo, pending_config):
+    # marimo holds a UI element by a weak reference, so the run button keeps its global name.
     run_button = mo.ui.run_button(label="Run model", kind="success", disabled=corpus is None)
-    # The sidebar stays in view while the page scrolls, so the summary and the run button sit
-    # next to the settings and the results alike.
     _summary = mo.md(f"**{pending_config.summary(len(corpus) if corpus else 0)}**")
-    mo.sidebar([mo.md("### Run"), _summary, run_button], width="20rem")
+    mo.vstack([mo.md("### Run"), _summary, run_button], align="start")
     return (run_button,)
 
 
@@ -1746,36 +1745,78 @@ def _(AppConfig, display_result, exports, include_text, mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
-    ---
+    # The sidebar stays in view on every step, so a reader finds the author, the licence, and the
+    # sources without scrolling to the end of a long page. This is the only copy of the text.
+    # The How to text uses Simplified Technical English: short sentences, one instruction each.
+    mo.sidebar(
+        [
+            mo.md(
+                """
+            ### How to
 
-    ### About
+            #### Use a demo
 
-    **The tool.** [Moritz Mähr](https://github.com/maehr) wrote Simple Topic Modeling. It is free
-    software under the
-    [AGPL-3.0](https://github.com/maehr/simple-topic-modeling/blob/main/LICENSE).
+            1. Click **Newspaper Corpus demo** or **Single Book demo**.
+            2. Wait. The app loads the text and makes the model.
+            3. Read the results in Step 3. Start with the **Overview** tab.
 
-    **The newspaper demo.** The corpus holds 295 articles from the *Journal de Genève* and the
-    *Gazette de Lausanne* of 1914. The Digital Humanities Laboratory of the EPFL digitised the
-    historical archive of *Le Temps*. It published the year 1914 under CC BY 4.0, for the 2015
-    Swiss Open Cultural Data Hackathon. The articles are anonymous newspaper text from 1914, so
-    they left copyright in 1985. The
-    [project page](https://hack.glam.opendata.ch/project/234) holds the archive.
+            #### Use your own data
 
-    **The book demo.** Mary Wollstonecraft, *A Vindication of the Rights of Woman* (1792), from
-    [Project Gutenberg](https://www.gutenberg.org/ebooks/3420). The author died in 1797, so the
-    work is in the public domain. A build script removes the Project Gutenberg header and licence,
-    and keeps each sentence of the work.
+            1. Click **Use my own data**.
+            2. In Step 1, drop your files in the box, or paste your text.
+            3. Use one CSV, TSV, JSON, or JSONL file for a table. Use one row for each document.
+            4. Use one or more TXT or PDF files for texts. Each file is one document.
+            5. For one long text, set **Analyse as** to **Ordered text**.
+            6. In Step 2, set the language. Keep the other settings for the first run.
+            7. In Step 3, click **Run model**.
 
-    [`NOTICE`](https://github.com/maehr/simple-topic-modeling/blob/main/NOTICE) holds the full
-    statement for both demos.
+            #### Make the topics better
 
-    **Take part.** [Report a problem or ask for a
-    feature](https://github.com/maehr/simple-topic-modeling/issues). Read the [contribution
-    guidelines](https://github.com/maehr/simple-topic-modeling/blob/main/CONTRIBUTING.md). Read
-    the [source](https://github.com/maehr/simple-topic-modeling).
-    """
+            1. Read the terms of each topic in the **Topics** tab.
+            2. Type the words that you do not want in **Add stop words**.
+            3. Change the **Number of topics**.
+            4. Click **Rerun**. Compare the runs in the **Diagnostics** tab.
+
+            #### Keep your work
+
+            1. In Step 4, click **Download complete research package (.zip)**.
+            2. To do the same run again, load its `config.json` in Step 2.
+
+            The app does not send your data to a server. All work occurs in this browser.
+
+            ### About
+
+            [Moritz Mähr](https://github.com/maehr) wrote Simple Topic Modeling. It is free
+            software under the
+            [AGPL-3.0](https://github.com/maehr/simple-topic-modeling/blob/main/LICENSE).
+
+            #### Demos
+
+            **Newspapers.** 295 articles from the *Journal de Genève* and the *Gazette de
+            Lausanne* of 1914. The EPFL Digital Humanities Laboratory digitised the archive of
+            *Le Temps* and published it under CC BY 4.0, for the 2015 Swiss Open Cultural Data
+            Hackathon. The articles are anonymous, so they left copyright in 1985.
+            [Project page](https://hack.glam.opendata.ch/project/234).
+
+            **Book.** Mary Wollstonecraft, *A Vindication of the Rights of Woman* (1792), from
+            [Project Gutenberg](https://www.gutenberg.org/ebooks/3420). The work is in the public
+            domain. A build script removes the Project Gutenberg header and licence, and keeps
+            each sentence of the work.
+
+            [`NOTICE`](https://github.com/maehr/simple-topic-modeling/blob/main/NOTICE) holds the
+            full statement for both demos.
+
+            #### Take part
+
+            - [Report a problem or ask for a
+              feature](https://github.com/maehr/simple-topic-modeling/issues)
+            - [Contribution
+              guidelines](https://github.com/maehr/simple-topic-modeling/blob/main/CONTRIBUTING.md)
+            - [Source code](https://github.com/maehr/simple-topic-modeling)
+            """
+            )
+        ],
+        width="20rem",
     )
     return
 

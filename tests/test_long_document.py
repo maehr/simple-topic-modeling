@@ -9,9 +9,11 @@ from simple_topic_modeling import plots
 from simple_topic_modeling.config import AppConfig, ModelConfig, config_from_upload
 from simple_topic_modeling.exports import config_json, documents_topics_frame
 from simple_topic_modeling.io import (
+    DEMO_TEXT_NAME,
     UploadedFile,
     build_corpus,
     decode_text,
+    demo_text,
     sample_corpus,
     split_long_document,
     strip_markup,
@@ -251,3 +253,29 @@ def test_segment_unit_follows_the_split_rule():
     assert segment_unit("blank_lines", is_pdf=True) == "segment"
     assert segment_unit("lines", is_pdf=True) == "line"
     assert segment_unit("whole") == "document"
+
+
+def test_the_book_demo_splits_into_ordered_paragraphs():
+    text = demo_text()
+    segments, identifiers, metadata = split_long_document(text, DEMO_TEXT_NAME)
+    assert len(segments) == text.count("\n\n") + 1
+    assert segments[0].startswith("A VINDICATION OF THE RIGHTS OF WOMAN")
+    assert segments[-1].startswith("Be just then, O ye men of understanding!")
+    assert identifiers[:2] == [f"{DEMO_TEXT_NAME}#1", f"{DEMO_TEXT_NAME}#2"]
+    assert metadata["segment_number"].tolist() == list(range(1, len(segments) + 1))
+
+
+def test_the_book_demo_holds_the_work_only():
+    text = demo_text()
+    for leftover in ("Gutenberg", "This etext", "CONTENTS.", "Footnote", "BIOGRAPHICAL SKETCH"):
+        assert leftover not in text
+    assert all("\n" not in segment for segment in text.rstrip("\n").split("\n\n"))
+
+
+def test_the_book_demo_fits_as_an_ordered_text():
+    segments, identifiers, metadata = split_long_document(demo_text(), DEMO_TEXT_NAME)
+    corpus, stats = build_corpus(segments, identifiers, metadata)
+    config = AppConfig(model=ModelConfig(n_topics=8), analyse_as="long_document", language="en")
+    result = fit_topic_model(corpus, config)
+    assert stats.kept == len(segments)
+    assert result.document_topic.shape == (len(segments), 8)

@@ -1,43 +1,51 @@
-# Plan — UX review (issue #31)
-
-Part of #31. The numbers below follow the "Suggested implementation order" in the issue.
-Two findings are still open:
-
-- 6 — make the topic map directly readable. #35 makes the bubbles and bars clickable. Labels on
-  the bubbles are still missing.
-- 10 — review responsive behaviour and accessibility.
+# Plan — second demo (#42) and About sidebar (#43)
 
 ## Stack (each PR targets the branch below it)
 
-| PR | Branch | Base | Finding |
-|----|--------|------|---------|
-| #33 | `fix/reject-ambiguous-uploads` | `main` | 1 — reject ambiguous uploads |
-| #34 | `feat/run-demo` | `fix/reject-ambiguous-uploads` | 2 — Run demo / Use my own data |
-| #35 | `feat/shared-topic-selection` | `feat/run-demo` | 3 — one shared selected topic |
-| #36 | `feat/rerun-from-notice` | `feat/shared-topic-selection` | 4 — Rerun in the banner, sidebar Run control |
-| #37 | `feat/single-document-modes` | `feat/rerun-from-notice` | 5 — rename modes by intent |
-| #38 | `feat/rename-in-topic-view` | `feat/single-document-modes` | 7 — rename a topic from its header |
-| #39 | `feat/diagnostics-explanations` | `feat/rename-in-topic-view` | 9 — explain the diagnostics, compare runs |
-| #40 | `feat/task-oriented-export` | `feat/diagnostics-explanations` | 8 — research package as the primary export |
+| Issue | Branch | Base |
+|-------|--------|------|
+| #42 | `feat/demo-text` | `main` |
+| #43 | `feat/about-sidebar` | `feat/demo-text` |
 
 Merge from the bottom up.
 
+## #42 — second demo: one long text
+
+Decisions:
+
+- Source: Project Gutenberg #3420, `https://www.gutenberg.org/cache/epub/3420/pg3420.txt`.
+  The script pins the SHA-256. A mismatch stops the build. The maintainer then reviews the new
+  file and updates the hash. No mirror: the pinned hash already detects a change in place.
+- `scripts/build_demo_text.py` writes `simple_topic_modeling/data/demo_text.txt` and
+  `scripts/demo_text.provenance.json`. It removes the Gutenberg header, footer, and licence.
+  It joins each hard-wrapped paragraph into one line and keeps a blank line between paragraphs.
+- `io.demo_text()` reads the file with `importlib.resources`.
+- The source radio gets two demo options: **Demo: newspapers** and **Demo: book**.
+- Two buttons above Step 1: **Run demo** (newspapers) and **Run book demo**.
+- The book demo opens in **Ordered text** mode, split on blank lines, in English.
+- The language controls join the `touched` map, so a change of source keeps the reader's values.
+- The start topic count for the book comes from a measured test. The comment in `app.py`
+  holds the reason.
+- Update `NOTICE`, the About section, the language help, and `SPECS.md`.
+
+## #43 — About in the sidebar
+
+- Move **Run**, the summary, and **Run model** to the start of Step 3. Keep `run_button`.
+- Put the About text in `mo.sidebar`. Remove the About cell at the end of the page.
+- Update `SPECS.md` Step 3 and the About rule.
+
+## Checks for each PR
+
+- The section 4 gate, `marimo check`, and the `app.run()` check.
+- Every cell parameter is some cell's return value.
+- Browser: Run model, Run demo, Run book demo, and Rerun each start one fit, in `marimo edit`
+  and in the exported `dist/`.
+- #43: the sidebar at phone width.
+
 ## Status
-- Items 3–5: implemented, gate green, and browser-tested on local `marimo run`.
-- Copilot review, 2026-09-29: all six open threads fixed.
-  - #34: Run demo keeps the reader's settings.
-  - #35: rename restored, card buttons labelled, heatmap matched by topic id.
-  - #37: PDF segments and pasted text named correctly.
-  - Browser testing found that two equal topic names crashed the result view. That bug is also on `main`.
-    Fixed in #35: a taken name gets a number.
-- The exported Pyodide `dist/` of #37 passed a smoke test on 2026-09-29.
-- Findings 7, 8, and 9: implemented, gate green, and browser-tested on local `marimo run`.
-  - 7: **Rename** sits beside the topic heading in the Topics tab. It opens a form with
-    **Save name** and **Cancel**. A selection change closes the form.
-  - 8: **Download complete research package (.zip)** comes first. A closed **Individual files**
-    section holds the single files with task labels.
-  - 9: each measure has a one-line explanation. A table compares up to five runs of the session
-    on the same corpus.
-- Lesson: `app.run()` runs only the path without a result. A deleted cell therefore passed the gate
-  and broke the result view. Check the cell parameters against the cell returns after a large edit.
-- Open: marimo-internal `handleFillUpdated/Unmount` console messages seen once after a slider change on PR 4. Cause unknown.
+
+- [x] #42 build script
+- [x] #42 package and app
+- [x] #42 checks (gate, app.run, marimo edit + dist browser runs)
+- [ ] #43 app and specs
+- [ ] #43 checks, PR

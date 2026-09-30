@@ -25,11 +25,14 @@ Version 1 receives no further work. Its code stays at the tag
 [`v1.0.0`](https://github.com/maehr/simple-topic-modeling/releases/tag/v1.0.0) and the branch
 [`legacy/streamlit`](https://github.com/maehr/simple-topic-modeling/tree/legacy/streamlit).
 
-## The demo corpus
+## The demos
 
-The app opens with a demo corpus, so you can see a real result before you load your own documents.
+The app opens with two demos, so you can see a real result before you load your own documents.
+**Run demo** fits the newspaper demo. **Run book demo** fits the book demo.
 
-The corpus holds 295 articles from the *Journal de Genève* and the *Gazette de Lausanne* of 1914.
+### Newspapers of 1914
+
+The newspaper demo holds 295 articles from the *Journal de Genève* and the *Gazette de Lausanne* of 1914.
 Each article carries its publication date and the section heading that the newspaper printed above
 it. Six sections give six clear themes: the military chronicle, sport, finance, the weather, book
 reviews, and the courts. A machine read the articles from a scan, so some words carry errors. A
@@ -45,13 +48,25 @@ the full statement.
 a known hash and records each source URL and each SHA-256 in
 `scripts/demo_corpus.provenance.json`.
 
+### One book of 1792
+
+The book demo is Mary Wollstonecraft, *A Vindication of the Rights of Woman* (1792), in English.
+The app splits the book into 784 paragraphs and keeps their order, in **Ordered text** mode. The
+results show where each topic occurs, from the dedication to the last chapter.
+
+The text comes from [Project Gutenberg #3420](https://www.gutenberg.org/ebooks/3420). The author
+died in 1797, so the work is in the public domain. `scripts/build_demo_text.py` rebuilds the file.
+It removes the Project Gutenberg header, footer, and licence, the table of contents, and the bare
+chapter and section numbers. It checks the source against a known hash and records each SHA-256 in
+`scripts/demo_text.provenance.json`.
+
 ## Repeat a run
 
 Every run uses a fixed random seed. The same settings on the same corpus give the same topics.
 
 1. Download `config.json` in Step 4. It records the app version, the language, the stop words,
    every model parameter, including the seed, and the split of one text.
-2. Download the demo corpus in Step 1, or keep your own corpus.
+2. Download the demo file in Step 1, or keep your own corpus.
 3. Send both files to your reader.
 4. The reader loads `config.json` in Step 2. The app restores each setting.
 
@@ -62,8 +77,8 @@ model API. The app builds every download in your browser.
 
 ## What it does
 
-1. Add a corpus. Drag files in, paste text, or load the demo data. Select **Run demo** to fit a
-   model on the demo corpus in one step.
+1. Add a corpus. Drag files in, paste text, or load a demo. Select **Run demo** or **Run book
+   demo** to fit a model on a demo in one step.
 2. Choose a language. Edit the stop words when you need to.
 3. Choose a model and its parameters.
 4. Select **Run model**. The app fits the model in your browser.
@@ -74,7 +89,8 @@ model API. The app builds every download in your browser.
 Step 2 shows the model and the number of topics. The other parameters wait in a closed **Advanced
 settings** panel.
 
-The app fits a model only when you select **Run model** or **Run demo**. A changed setting does not
+The app fits a model only when you select **Run model**, **Run demo**, **Run book demo**, or
+**Rerun**. A changed setting does not
 start a new fit. The app keeps the last result until a new fit succeeds.
 
 ## What it reads
@@ -234,9 +250,9 @@ Pyodide needs.
 │   ├── preprocess.py       the text cleaning
 │   ├── result.py           the result object
 │   ├── stopwords.py        the packaged stop-word lists
-│   └── data/               the stop-word lists and the demo corpus
+│   └── data/               the stop-word lists and the two demos
 ├── public/wheels/          the built wheel, which the export copies
-├── scripts/                the script that builds the demo corpus
+├── scripts/                the scripts that build the two demos
 └── tests/
 ```
 

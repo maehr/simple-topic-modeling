@@ -36,28 +36,40 @@ Requirements:
 
 - Show an intro above Step 1. Name the app. State what it finds. State what the reader gets. State
   the length of a run.
-- Show two primary actions above Step 1. **Run demo** selects the demo data source and fits the
-  model with the current settings. **Use my own data** selects the upload source.
+- Show three primary actions above Step 1. **Run demo** selects the newspaper demo and fits the
+  model with the current settings. **Run book demo** selects the book demo and fits it the same
+  way. **Use my own data** selects the upload source.
 - Keep the privacy callout under the intro.
-- Show two closed accordions. **How to use this tool** holds the four steps and describes the demo
-  corpus. **What is a topic model?** explains a topic, a term, and a score without jargon.
+- Show two closed accordions. **How to use this tool** holds the four steps and describes the two
+  demos. **What is a topic model?** explains a topic, a term, and a score without jargon.
 - Show an orientation line above the result tabs. Name what each tab holds. Name the next action.
 - Show a **Glossary** accordion under the result tabs. Define topic, term, prevalence, dominant
   score, topic diversity, document frequency, n-gram, and TF-IDF.
 - Point each empty state at the control that fills it.
-- Show an **About** section at the end. Name the author. Describe and link the demo corpus. Link
+- Show an **About** section at the end. Name the author. Describe and link the two demos. Link
   the repository, the issue tracker, and the contribution guidelines.
 
 ### Step 1 — Add data
 
-Support drag-and-drop, file picker, paste, and demo data.
+Support drag-and-drop, file picker, paste, and two demos: **Demo: newspapers** and **Demo: book**.
 
-The demo corpus holds 295 articles from the *Journal de Genève* and the *Gazette de Lausanne* of
+The newspaper demo holds 295 articles from the *Journal de Genève* and the *Gazette de Lausanne* of
 1914, with a `date` column and a `category` column. The EPFL Digital Humanities Laboratory
 published the archive under CC BY 4.0 for the 2015 Swiss Open Cultural Data Hackathon. The corpus
 ships inside the wheel at `simple_topic_modeling/data/demo_corpus.csv`, so the app reads it without
 a network fetch. `scripts/build_demo_corpus.py` rebuilds it and records the provenance. `NOTICE`
-holds the source and the licence.
+holds the source and the licence. The app starts this demo at six topics, one for each section.
+
+The book demo is Mary Wollstonecraft, *A Vindication of the Rights of Woman* (1792), from Project
+Gutenberg #3420. The work is in the public domain. The file ships inside the wheel at
+`simple_topic_modeling/data/demo_text.txt`, with one paragraph per line and a blank line between
+paragraphs. `scripts/build_demo_text.py` rebuilds it from a pinned SHA-256 and records the
+provenance. It removes the Project Gutenberg boilerplate, an anonymous biographical sketch, the table
+of contents, the bare chapter and section numbers, and the footnote labels. It keeps each sentence of
+the work.
+
+The book demo loads as one text, in **Ordered text** mode, split on blank lines, in English. It starts
+at eight topics. The comment next to the start value in `app.py` holds the measurement.
 
 #### Accepted files
 
@@ -157,8 +169,8 @@ When exactly one text is loaded, show **Analyse as**:
 
 - **Independent segments** — the default for a text file and for pasted text. The segments are
   unrelated documents. The app adds no position metadata.
-- **Ordered text** — the default for one PDF. The segments keep their parent and their
-  position.
+- **Ordered text** — the default for one PDF and for the book demo. The segments keep their
+  parent and their position.
 
 The stored values stay `corpus` and `long_document`, so a saved `config.json` still loads. Under
 the input summary, one line says what the model sees, for example `1 file → 327 paragraphs →
@@ -386,7 +398,7 @@ Show a summary before fitting, e.g.:
 
 Primary button: **Run model**.
 
-**Run demo** fits with the same rules.
+**Run demo** and **Run book demo** fit with the same rules.
 
 Changing settings after a successful run shows:
 
@@ -661,7 +673,7 @@ Requirements:
   change it and see how stable the topics are.
 - Stamp `app_version` from the installed package metadata, never from a literal. A file from
   version 2 must report version 2.
-- Offer a download of the demo corpus while the demo is the active source.
+- Offer a download of the demo file while a demo is the active source.
 - Accept a `config.json` upload. Restore the language, the stop words, every model parameter, and
   the split settings of one text. Name the loaded file and the version that wrote it.
 - Report a bad file with a recovery action. Keep the parsing in the package, never in the notebook,
@@ -683,7 +695,7 @@ Performance rules:
 
 - keep matrices sparse,
 - do not densify the full document-term matrix,
-- fit only on **Run model** or **Run demo**,
+- fit only on **Run model**, **Run demo**, **Run book demo**, or **Rerun**,
 - cache derived coordinates/similarities per run,
 - use snippets rather than full text in tables,
 - sample scatter-plot points if rendering becomes slow without changing model results.
@@ -732,6 +744,7 @@ Suggested layout:
 │   ├── stopwords.py
 │   └── data/
 │       ├── demo_corpus.csv
+│       ├── demo_text.txt
 │       └── stopwords/
 │           ├── en.txt
 │           ├── de.txt

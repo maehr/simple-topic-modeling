@@ -35,6 +35,34 @@ Demo corpus: simple_topic_modeling/data/demo_corpus.csv
              It records each source URL and each SHA-256 in
              scripts/demo_corpus.provenance.json.
 
+Demo text: simple_topic_modeling/data/demo_text.txt
+
+    Content: Mary Wollstonecraft, "A Vindication of the Rights of Woman:
+             with Strictures on Political and Moral Subjects", first
+             published in London in 1792. The file holds one paragraph per
+             line. It leaves out the table of contents and the bare chapter
+             and section numbers. It keeps each chapter title and each
+             sentence of the work. It also leaves out the anonymous
+             biographical sketch that the Project Gutenberg edition prints
+             before the work, because the sketch has no author and no date.
+
+    Source:  Project Gutenberg, eBook #3420
+             (https://www.gutenberg.org/ebooks/3420).
+             File: https://www.gutenberg.org/cache/epub/3420/pg3420.txt
+
+    Author:  Mary Wollstonecraft (1759-1797).
+
+    Status:  Public domain worldwide. The author died in 1797, so the term
+             of protection ended long ago in every country. The build script
+             removes the Project Gutenberg header, footer, and licence, and
+             the "Project Gutenberg" trademark with them. Only the public
+             domain work remains, so the Project Gutenberg licence does not
+             apply to this file.
+
+    Build:   scripts/build_demo_text.py rebuilds the file from the source. It
+             records the source URL and each SHA-256 in
+             scripts/demo_text.provenance.json.
+
 Stop-word lists: simple_topic_modeling/data/stopwords/{en,de,fr,it,es}.txt
 
     Source:  spaCy (https://github.com/explosion/spaCy)

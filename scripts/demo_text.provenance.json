@@ -1,0 +1,10 @@
+{
+  "source_page": "https://www.gutenberg.org/ebooks/3420",
+  "source_url": "https://www.gutenberg.org/cache/epub/3420/pg3420.txt",
+  "source_sha256": "7d79652f43541759d8ff0ce467372fa4a534d3f9dc32013e01ca99ea04b286a8",
+  "output": "simple_topic_modeling/data/demo_text.txt",
+  "output_sha256": "abbbceb06c835d2d670d3397123faa34e98f0c99db1a8aba3934484b9e58aa4d",
+  "output_bytes": 495401,
+  "paragraphs": 784,
+  "words": 84487
+}

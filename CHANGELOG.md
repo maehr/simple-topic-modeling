@@ -15,37 +15,21 @@ further work.
 
 - Add a long-document mode with a position view (#29)
 - Import text-based PDF files in the browser with pypdf (#30)
-- Add Run demo and Use my own data actions
-- Share one selected topic across views
-- Rerun from the configuration-changed notice
-- Rename single-document modes by intent
-- Rename a topic from its detail view
-- Explain the diagnostics and compare runs
-- Make the research package the primary export
+- Add Run demo and Use my own data actions (#34)
+- Share one selected topic across views (#35)
+- Rerun from the configuration-changed notice (#36)
+- Rename single-document modes by intent (#37)
+- Rename a topic from its detail view (#38)
+- Explain the diagnostics and compare runs (#39)
+- Make the research package the primary export (#40)
 
 ### Build and tooling
 
 - Bump the actions-all group across 1 directory with 8 updates (#26)
 
-### Documentation
-
-- Add stack plan and update changelog
-- Update the changelog and the stack plan after the review
-- Add the rename, export, and diagnostics PRs to the stack plan
-
 ### Fixed
 
-- Reject ambiguous multi-file uploads
-- Reject binary files before classifying an upload
-- Keep the model settings when the data source changes
-- Restore renaming and label the card buttons
-- Match the heatmap selection by topic id
-- Never give two topics the same name
-- Give the number to the topic that was renamed last
-- Show a custom topic name verbatim on its card
-- Name PDF segments and pasted text correctly
-- Show a topic name verbatim in its heading
-- Address the review of the run comparison
+- Reject ambiguous multi-file uploads (#33)
 ## [2.0.0-alpha] - 2026-09-21
 
 ### Added

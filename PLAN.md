@@ -52,6 +52,4 @@ Decisions:
 
 ## Open after the merge
 
-- `config_from_upload` is not imported in the first cell of `app.py`, on `main` too. Loading a
-  `config.json` raises a `NameError`. Fix it in its own PR.
 - Delete `PLAN.md` when both PRs are merged.

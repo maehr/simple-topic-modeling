@@ -47,5 +47,11 @@ Decisions:
 - [x] #42 build script
 - [x] #42 package and app
 - [x] #42 checks (gate, app.run, marimo edit + dist browser runs)
-- [ ] #43 app and specs
-- [ ] #43 checks, PR
+- [x] #43 app and specs
+- [x] #43 checks (gate, app.run, marimo run + dist browser runs, 500 px drawer)
+
+## Open after the merge
+
+- `config_from_upload` is not imported in the first cell of `app.py`, on `main` too. Loading a
+  `config.json` raises a `NameError`. Fix it in its own PR.
+- Delete `PLAN.md` when both PRs are merged.

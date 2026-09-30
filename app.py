@@ -1021,11 +1021,10 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(corpus, mo, pending_config):
+    # marimo holds a UI element by a weak reference, so the run button keeps its global name.
     run_button = mo.ui.run_button(label="Run model", kind="success", disabled=corpus is None)
-    # The sidebar stays in view while the page scrolls, so the summary and the run button sit
-    # next to the settings and the results alike.
     _summary = mo.md(f"**{pending_config.summary(len(corpus) if corpus else 0)}**")
-    mo.sidebar([mo.md("### Run"), _summary, run_button], width="20rem")
+    mo.vstack([mo.md("### Run"), _summary, run_button], align="start")
     return (run_button,)
 
 
@@ -1744,36 +1743,45 @@ def _(AppConfig, display_result, exports, include_text, mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
-    ---
+    # The sidebar stays in view on every step, so a reader finds the author, the licence, and the
+    # sources without scrolling to the end of a long page. This is the only copy of the text.
+    mo.sidebar(
+        [
+            mo.md(
+                """
+            ### About
 
-    ### About
+            [Moritz Mähr](https://github.com/maehr) wrote Simple Topic Modeling. It is free
+            software under the
+            [AGPL-3.0](https://github.com/maehr/simple-topic-modeling/blob/main/LICENSE).
 
-    **The tool.** [Moritz Mähr](https://github.com/maehr) wrote Simple Topic Modeling. It is free
-    software under the
-    [AGPL-3.0](https://github.com/maehr/simple-topic-modeling/blob/main/LICENSE).
+            #### Demos
 
-    **The newspaper demo.** The corpus holds 295 articles from the *Journal de Genève* and the
-    *Gazette de Lausanne* of 1914. The Digital Humanities Laboratory of the EPFL digitised the
-    historical archive of *Le Temps*. It published the year 1914 under CC BY 4.0, for the 2015
-    Swiss Open Cultural Data Hackathon. The articles are anonymous newspaper text from 1914, so
-    they left copyright in 1985. The
-    [project page](https://hack.glam.opendata.ch/project/234) holds the archive.
+            **Newspapers.** 295 articles from the *Journal de Genève* and the *Gazette de
+            Lausanne* of 1914. The EPFL Digital Humanities Laboratory digitised the archive of
+            *Le Temps* and published it under CC BY 4.0, for the 2015 Swiss Open Cultural Data
+            Hackathon. The articles are anonymous, so they left copyright in 1985.
+            [Project page](https://hack.glam.opendata.ch/project/234).
 
-    **The book demo.** Mary Wollstonecraft, *A Vindication of the Rights of Woman* (1792), from
-    [Project Gutenberg](https://www.gutenberg.org/ebooks/3420). The author died in 1797, so the
-    work is in the public domain. A build script removes the Project Gutenberg header and licence,
-    and keeps each sentence of the work.
+            **Book.** Mary Wollstonecraft, *A Vindication of the Rights of Woman* (1792), from
+            [Project Gutenberg](https://www.gutenberg.org/ebooks/3420). The work is in the public
+            domain. A build script removes the Project Gutenberg header and licence, and keeps
+            each sentence of the work.
 
-    [`NOTICE`](https://github.com/maehr/simple-topic-modeling/blob/main/NOTICE) holds the full
-    statement for both demos.
+            [`NOTICE`](https://github.com/maehr/simple-topic-modeling/blob/main/NOTICE) holds the
+            full statement for both demos.
 
-    **Take part.** [Report a problem or ask for a
-    feature](https://github.com/maehr/simple-topic-modeling/issues). Read the [contribution
-    guidelines](https://github.com/maehr/simple-topic-modeling/blob/main/CONTRIBUTING.md). Read
-    the [source](https://github.com/maehr/simple-topic-modeling).
-    """
+            #### Take part
+
+            - [Report a problem or ask for a
+              feature](https://github.com/maehr/simple-topic-modeling/issues)
+            - [Contribution
+              guidelines](https://github.com/maehr/simple-topic-modeling/blob/main/CONTRIBUTING.md)
+            - [Source code](https://github.com/maehr/simple-topic-modeling)
+            """
+            )
+        ],
+        width="20rem",
     )
     return
 

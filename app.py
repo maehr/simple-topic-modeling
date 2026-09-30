@@ -52,6 +52,7 @@ async def _():
         PreprocessConfig,
         StopWordConfig,
         config_changed,
+        config_from_upload,
     )
     from simple_topic_modeling.errors import FriendlyMessage, TopicError
     from simple_topic_modeling.preprocess import frequent_terms
@@ -68,6 +69,7 @@ async def _():
         StopWordConfig,
         TopicError,
         config_changed,
+        config_from_upload,
         effective_stopwords,
         exports,
         frequent_terms,

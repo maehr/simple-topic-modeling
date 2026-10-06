@@ -109,7 +109,8 @@ These rules apply only to Python that runs in a browser. A server target has no 
 
 ## 8. Project notes — Simple Topic Modeling
 
-These rules come from measured behaviour of `marimo` 0.24.2. Do not change them without a new test.
+These rules come from measured behaviour of `marimo` 0.25.1 on Pyodide 314. Do not change them without a new test.
+`pyproject.toml` pins `marimo` exactly, because its version fixes the Pyodide version of the export.
 
 ### Package layout
 

@@ -70,8 +70,10 @@ circle size shows the prevalence: the share of the corpus that the topic covers.
 document map. A topic then sits at the average position of its documents. The share of the topic
 in each document sets the weight of that document.
 
-**How to read a distance.** Two topics near each other occur in documents with similar words. Two
-topics far apart occur in different documents. Two circles that overlap are not the same topic.
+**How to read a distance.** Two topics near each other have most of their weight in documents with
+similar words. Two topics far apart have most of their weight in different parts of the document
+map. A distance shows a tendency only: one document can still hold two distant topics. Two circles
+that overlap are not the same topic.
 
 **What the axes mean.** {AXIS_NOTE} The axes have no unit, so the map hides their values.
 
@@ -510,8 +512,9 @@ def document_scatter(frame: pd.DataFrame, sample_limit: int = DOCUMENT_SAMPLE_LI
         .properties(
             height=440,
             description=(
-                "Document map. Each point is one document. The colour shows the dominant topic."
-                " Documents near each other use similar words. " + AXIS_NOTE
+                "Document map. Each point is one document, or one segment of a long text. The"
+                " colour shows the dominant topic. Points near each other use similar words. "
+                + AXIS_NOTE
             ),
         )
     )

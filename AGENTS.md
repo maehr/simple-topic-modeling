@@ -162,18 +162,20 @@ the page. The first cell therefore installs the wheel again, under a `sys.platfo
 guard, using `mo.notebook_location()` to build an absolute URL. Keep both paths. The PEP 723 entry
 also stops marimo from building its own wheel.
 
-### Check the notebook with `app.run()`
+### Check the notebook with `tests/test_notebook.py`
 
-`marimo check` does not catch a name that two cells both define. `app.run()` does. Run this after you
-edit `app.py`:
+`marimo check` does not catch a name that two cells both define. A plain `app.run()` runs only the
+path without a result. `tests/test_notebook.py` closes both gaps:
+
+* It checks that some cell returns each cell parameter.
+* It runs `app.run()` without a result.
+* It runs `app.run(defs={"display_result": ...})` with a fitted newspaper demo and a fitted book
+  demo. The result view then runs every tab.
+
+The gate runs this file. The CI `Notebook` job runs it too. Run it after you edit `app.py`:
 
 ```bash
-uv run python -c "
-import importlib.util, sys
-spec = importlib.util.spec_from_file_location('notebook_app', 'app.py')
-module = importlib.util.module_from_spec(spec); sys.modules['notebook_app'] = module
-spec.loader.exec_module(module); module.app.run(); print('cells ok')
-"
+uv run pytest tests/test_notebook.py --no-cov
 ```
 
 Prefix every cell-local variable with `_`. marimo requires a unique name across cells.
@@ -267,7 +269,7 @@ The remote is `github.com/maehr/simple-topic-modeling`. The published app is
 Three workflows run:
 
 * `ci.yml` runs the section 4 gate in the `Gate` job. The `Notebook` job runs `marimo check` and
-  the `app.run()` check. The `dependency-review` job runs on a pull request only.
+  `tests/test_notebook.py`. The `dependency-review` job runs on a pull request only.
 * `pages.yml` builds the wheel, exports the app, and publishes `dist/`. It fails when the wheel
   file name does not match the project version.
 * `codeql.yml` scans the Python code.

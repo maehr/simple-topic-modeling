@@ -59,16 +59,11 @@ jobs:
       - name: Check the browser compatibility
         run: uv run marimo check app.py --select MW
 
-      # `marimo check` does not find a name that two cells both define.
-      # `app.run()` does, because it builds the cell graph.
+      # `marimo check` does not find a name that two cells both define, and a plain
+      # `app.run()` takes only the path without a result. The test checks every cell parameter
+      # and runs the result view with a fitted demo result.
       - name: Run the notebook cells
-        run: |
-          uv run python -c "
-          import importlib.util, sys
-          spec = importlib.util.spec_from_file_location('notebook_app', 'app.py')
-          module = importlib.util.module_from_spec(spec); sys.modules['notebook_app'] = module
-          spec.loader.exec_module(module); module.app.run(); print('cells ok')
-          "
+        run: uv run pytest tests/test_notebook.py --no-cov
 
   dependency-review:
     name: Dependency review

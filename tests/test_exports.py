@@ -2,6 +2,7 @@ import io
 import json
 import zipfile
 
+import altair as alt
 import numpy as np
 import pandas as pd
 import pytest
@@ -11,13 +12,14 @@ from simple_topic_modeling.exports import (
     EXPORT_LABELS,
     config_json,
     documents_topics_frame,
+    figure_files,
     project_zip,
     to_csv_bytes,
     topic_similarity_frame,
     topic_terms_frame,
     topics_frame,
 )
-from simple_topic_modeling.io import build_corpus
+from simple_topic_modeling.io import build_corpus, split_long_document
 from simple_topic_modeling.modeling import fit_topic_model
 from simple_topic_modeling.result import rename_topic
 
@@ -132,7 +134,8 @@ def test_csv_bytes_are_utf8():
 
 def test_zip_holds_the_six_documented_entries(result):
     archive = zipfile.ZipFile(io.BytesIO(project_zip(result, AppConfig())))
-    assert archive.namelist() == [
+    names = [name for name in archive.namelist() if not name.startswith("figures/")]
+    assert names == [
         "documents_topics.csv",
         "topics.csv",
         "topic_terms.csv",
@@ -158,4 +161,80 @@ def test_zip_carries_the_text_when_asked(result):
 
 def test_every_single_file_has_a_task_label(result):
     archive = zipfile.ZipFile(io.BytesIO(project_zip(result, AppConfig())))
-    assert set(EXPORT_LABELS) == set(archive.namelist()) - {"README.txt"}
+    files = {name for name in archive.namelist() if not name.startswith("figures/")}
+    assert set(EXPORT_LABELS) == files - {"README.txt"}
+
+
+def test_zip_holds_every_figure_of_a_plain_corpus(result):
+    archive = zipfile.ZipFile(io.BytesIO(project_zip(result, AppConfig())))
+    figures = {name for name in archive.namelist() if name.startswith("figures/")}
+    per_topic = {
+        f"figures/topic_{topic:02d}_{kind}"
+        for topic in range(1, result.n_topics + 1)
+        for kind in ("top_terms.html", "wordcloud.png")
+    }
+    base = {
+        "figures/topic_map.html",
+        "figures/topic_prevalence.html",
+        "figures/topic_similarity.html",
+        "figures/document_map.html",
+        "figures/dominant_topic_score_distribution.html",
+    }
+    assert figures == base | per_topic
+
+
+def test_an_html_figure_carries_its_data(result):
+    page = figure_files(result)["topic_map.html"].decode("utf-8")
+    assert "vega-embed" in page
+    assert '"datasets"' in page
+    assert '"number"' in page
+
+
+def test_the_document_map_holds_text_only_when_asked(result):
+    assert b'"snippet"' not in figure_files(result)["document_map.html"]
+    assert b'"snippet"' in figure_files(result, include_text=True)["document_map.html"]
+
+
+def _fit_with_metadata(dates):
+    texts = [
+        "cat dog runs fast",
+        "cat sleeps warm couch",
+        "dog barks postman loudly",
+        "bird sings morning song",
+        "bird flies above trees",
+        "fish swims cold water",
+    ]
+    metadata = pd.DataFrame({"group": ["a", "a", "b", "b", "c", "c"], "date": dates})
+    corpus, _ = build_corpus(texts, [f"d{index}" for index in range(len(texts))], metadata)
+    return fit_topic_model(corpus, AppConfig(model=ModelConfig(n_topics=2, min_df=1)))
+
+
+def test_metadata_figures_appear_when_their_data_exists():
+    dates = ["2024-01-05", "2024-02-10", "2024-03-15", "2024-04-20", "2024-05-25", "2024-06-30"]
+    names = set(figure_files(_fit_with_metadata(dates)))
+    assert {"group_shares.html", "topic_shares_over_time.html"} <= names
+
+
+def test_unreadable_dates_give_no_time_figure():
+    names = set(figure_files(_fit_with_metadata(["soon"] * 6)))
+    assert "group_shares.html" in names
+    assert "topic_shares_over_time.html" not in names
+
+
+def test_a_long_text_adds_the_position_figures():
+    text = "\n\n".join(
+        ["cat dog runs fast", "cat sleeps warm couch", "bird sings morning song"] * 4
+    )
+    segments, identifiers, metadata = split_long_document(text, "book.txt")
+    corpus, _ = build_corpus(segments, identifiers, metadata)
+    config = AppConfig(model=ModelConfig(n_topics=2, min_df=1), analyse_as="long_document")
+    names = set(figure_files(fit_topic_model(corpus, config)))
+    assert {"topic_positions.html", "topic_01_positions.html", "topic_02_positions.html"} <= names
+
+
+def test_figures_ignore_the_row_limit(result, monkeypatch):
+    # Altair refuses more than 5,000 rows by default. A long text exceeds that limit.
+    big = alt.Chart(pd.DataFrame({"x": range(5001)})).mark_point()
+    monkeypatch.setattr("simple_topic_modeling.plots.score_histogram", lambda frame: big)
+    page = figure_files(result)["dominant_topic_score_distribution.html"]
+    assert b'"datasets"' in page

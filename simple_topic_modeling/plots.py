@@ -498,8 +498,10 @@ def document_scatter(frame: pd.DataFrame, sample_limit: int = DOCUMENT_SAMPLE_LI
         alt.Tooltip("document_id:N", title="Document"),
         alt.Tooltip("topic:N", title="Topic"),
         alt.Tooltip("score:Q", title="Score", format=".3f"),
-        alt.Tooltip("snippet:N", title="Text"),
     ]
+    # An export without the document text drops the snippet column, and the tooltip follows.
+    if "snippet" in frame.columns:
+        tooltip.append(alt.Tooltip("snippet:N", title="Text"))
     return (
         alt.Chart(frame, title="Document map")
         .mark_circle(size=60, opacity=0.6)

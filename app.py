@@ -1377,6 +1377,7 @@ def _(
                 ),
                 mo.hstack(_cards, justify="start", gap=1, wrap=True),
                 map_chart,
+                mo.accordion({"How to read the topic map": mo.md(plots.TOPIC_MAP_HELP)}),
                 bars_chart,
                 mo.ui.altair_chart(plots.similarity_heatmap(display_result, selected_index)),
             ]
@@ -1481,6 +1482,7 @@ def _(
             _document_view = mo.vstack(
                 [
                     mo.ui.altair_chart(plots.document_scatter(_documents)),
+                    mo.accordion({"How to read the document map": mo.md(plots.DOCUMENT_MAP_HELP)}),
                     mo.ui.table(_documents.drop(columns=["x", "y"]), selection=None),
                 ]
             )

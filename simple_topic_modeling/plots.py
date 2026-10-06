@@ -20,7 +20,10 @@ if TYPE_CHECKING:
     from simple_topic_modeling.result import TopicModelResult
 
 __all__ = [
+    "DOCUMENT_MAP_HELP",
+    "DOCUMENT_SAMPLE_LIMIT",
     "SNIPPET_LENGTH",
+    "TOPIC_MAP_HELP",
     "choose_date_bin",
     "document_frame",
     "document_scatter",
@@ -50,6 +53,56 @@ __all__ = [
 
 AXIS_NOTE = "The axes carry no meaning. They separate the points only."
 """`SPECS.md` section 5 de-emphasizes the projection axes."""
+
+DOCUMENT_SAMPLE_LIMIT = 4000
+"""The document map draws a fixed sample above this many documents."""
+
+_LIMITS = (
+    "**Limits.** The map compresses many dimensions into two. Read a distance as a hint, not as"
+    " a measure."
+)
+
+TOPIC_MAP_HELP = f"""
+**What you see.** Each circle is one topic. The number in the circle is the topic number. The
+circle size shows the prevalence: the share of the corpus that the topic covers.
+
+**How the app places a topic.** The app first places each document from its words, as on the
+document map. A topic then sits at the average position of its documents. The share of the topic
+in each document sets the weight of that document.
+
+**How to read a distance.** Two topics near each other have most of their weight in documents with
+similar words. Two topics far apart have most of their weight in different parts of the document
+map. A distance shows a tendency only: one document can still hold two distant topics. Two circles
+that overlap are not the same topic.
+
+**What the axes mean.** {AXIS_NOTE} The axes have no unit, so the map hides their values.
+
+{_LIMITS} To compare the terms of two topics, use the similarity heatmap.
+"""
+"""How to read the topic map. `SPECS.md` section 6 shows it beside the chart."""
+
+DOCUMENT_MAP_HELP = f"""
+**What you see.** Each point is one document. In the long-text mode, each point is one segment.
+The colour shows the dominant topic: the topic with the largest share in the document.
+
+**How the app places a document.** The position comes from the words of the document, not from
+the topic model. The app reduces the document-term matrix to two dimensions with a truncated
+singular value decomposition (SVD). This linear projection keeps the two directions in which the
+word use varies most.
+
+**How to read a distance.** Two documents near each other use similar words. A point can sit
+among points of another colour. Its words then resemble the words of its neighbours, but the topic
+model gives it another dominant topic.
+
+**What the axes mean.** {AXIS_NOTE} The axes have no unit, so the map hides their values.
+
+{_LIMITS} Above {DOCUMENT_SAMPLE_LIMIT:,} documents, the map shows a fixed random sample of
+{DOCUMENT_SAMPLE_LIMIT:,} documents.
+
+**Topic map and document map.** The topic map shows one circle per topic, at the average position
+of its documents. The document map shows the documents themselves.
+"""
+"""How to read the document map. `SPECS.md` section 6 shows it beside the chart."""
 
 EMPTY_STATE = "No data to show yet."
 """`SPECS.md` section 6 asks every chart for an empty state."""
@@ -425,7 +478,7 @@ def document_frame(result: TopicModelResult) -> pd.DataFrame:
     return pd.DataFrame(columns)
 
 
-def document_scatter(frame: pd.DataFrame, sample_limit: int = 4000) -> alt.Chart:
+def document_scatter(frame: pd.DataFrame, sample_limit: int = DOCUMENT_SAMPLE_LIMIT) -> alt.Chart:
     """Place every document on the 2-D map, coloured by its dominant topic.
 
     Above `sample_limit` rows the chart draws a reproducible sample. `SPECS.md` section 8 allows
@@ -456,7 +509,14 @@ def document_scatter(frame: pd.DataFrame, sample_limit: int = 4000) -> alt.Chart
             color=alt.Color("topic:N", title="Dominant topic"),
             tooltip=tooltip,
         )
-        .properties(height=440)
+        .properties(
+            height=440,
+            description=(
+                "Document map. Each point is one document, or one segment of a long text. The"
+                " colour shows the dominant topic. Points near each other use similar words. "
+                + AXIS_NOTE
+            ),
+        )
     )
 
 

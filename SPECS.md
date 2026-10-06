@@ -476,6 +476,8 @@ Every chart needs a title, hover tooltip, readable labels, and an empty state.
 
 **Topic map:** bubble position = 2-D centroid, size = prevalence, label = topic number, click = select topic.
 
+A *How to read the topic map* accordion below the map explains the size, the position, a distance, and the axes. The text is `plots.TOPIC_MAP_HELP`.
+
 **Similarity heatmap:** cosine similarity between normalized topic-term vectors.
 
 ### Topics
@@ -502,7 +504,7 @@ In ordered-text mode, the tab shows two more items:
 
 ### Documents
 
-- 2-D document scatter plot,
+- 2-D document scatter plot, with a *How to read the document map* accordion (`plots.DOCUMENT_MAP_HELP`),
 - color by dominant topic,
 - hover with ID, topic, score, snippet,
 - linked searchable/filterable table,

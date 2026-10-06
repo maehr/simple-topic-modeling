@@ -238,3 +238,13 @@ def test_figures_ignore_the_row_limit(result, monkeypatch):
     monkeypatch.setattr("simple_topic_modeling.plots.score_histogram", lambda frame: big)
     page = figure_files(result)["dominant_topic_score_distribution.html"]
     assert b'"datasets"' in page
+
+
+def test_a_figure_escapes_a_name_that_closes_the_script(result):
+    attack = "</script><img src=x onerror=alert(1)>"
+    files = figure_files(rename_topic(result, 0, attack))
+    for name, data in files.items():
+        if name.endswith(".html"):
+            assert attack.encode("utf-8") not in data
+            assert data.count(b"</script>") == data.count(b"<script")
+    assert b"\\u003c/script\\u003e" in files["topic_map.html"]

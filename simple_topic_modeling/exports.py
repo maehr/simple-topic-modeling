@@ -205,6 +205,22 @@ def config_json(config: AppConfig, topic_names: list[str] | None = None) -> byte
     return json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False).encode("utf-8")
 
 
+class _ScriptSafeEncoder(json.JSONEncoder):
+    r"""Escape `<`, `>`, and `&`, so a JSON value cannot end the `<script>` block of a page.
+
+    Altair writes the chart JSON into the page as it is. A topic name or a document ID such as
+    `</script>` would otherwise close the block and run as markup in the reader's browser.
+
+    >>> json.dumps({"name": "</script>"}, cls=_ScriptSafeEncoder)
+    '{"name": "\\u003c/script\\u003e"}'
+    """
+
+    def encode(self, o: object) -> str:
+        """Encode `o`, then escape the three characters that HTML can read as markup."""
+        text = super().encode(o)
+        return text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+
 def figure_files(result: TopicModelResult, include_text: bool = False) -> dict[str, bytes]:
     r"""Render every chart of the result view as a file that opens without the app.
 
@@ -255,7 +271,10 @@ def figure_files(result: TopicModelResult, include_text: bool = False) -> dict[s
     # long text gives a position chart above the default limit of 5,000 rows. Altair types
     # `PluginEnabler.__exit__` without `None`, so ty rejects a valid `with`.
     with alt.data_transformers.enable("default", max_rows=None):  # ty: ignore[invalid-context-manager]
-        files = {name: chart.to_html().encode("utf-8") for name, chart in charts.items()}
+        files = {
+            name: chart.to_html(json_kwds={"cls": _ScriptSafeEncoder}).encode("utf-8")
+            for name, chart in charts.items()
+        }
     for topic in range(result.n_topics):
         files[f"topic_{topic + 1:02d}_wordcloud.png"] = plots.word_cloud_png(result, topic)
     return files

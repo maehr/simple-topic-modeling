@@ -31,7 +31,7 @@ Repository = "https://github.com/maehr/simple-topic-modeling"
 
 [dependency-groups]
 dev = [
-    "marimo>=0.25.1",
+    "marimo==0.25.1",
     "prek>=0.5.3",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",

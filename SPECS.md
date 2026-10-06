@@ -659,11 +659,21 @@ topic_terms.csv
 topic_similarity.csv
 config.json
 README.txt
+figures/
 ```
 
 Create the ZIP locally with Python's standard `zipfile` module.
 
-Optionally expose Vega-Lite chart specs as JSON. PNG/SVG chart download is nice-to-have, not an MVP blocker.
+`figures/` holds every chart of the result view. `exports.figure_files` builds it:
+
+- Each Altair chart is a standalone HTML page. The page holds its data and loads Vega from a CDN.
+- Each word cloud is a PNG.
+- The group, date, and position charts appear only when their data exists.
+- Without *Include the document text*, the document map holds no snippet.
+
+The notebook builds the ZIP only when the reader clicks the button, because the word clouds are slow
+under Pyodide. A PNG or SVG export of an Altair chart is not planned. It needs `vl-convert`, which
+Pyodide does not ship.
 
 ### Reproducibility
 

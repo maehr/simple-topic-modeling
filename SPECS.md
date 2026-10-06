@@ -474,7 +474,7 @@ Every chart needs a title, hover tooltip, readable labels, and an empty state.
 
 **Topic card:** name, top five terms, prevalence, click to select.
 
-**Topic map:** bubble position = 2-D centroid, size = prevalence, click = select topic.
+**Topic map:** bubble position = 2-D centroid, size = prevalence, label = topic number, click = select topic.
 
 **Similarity heatmap:** cosine similarity between normalized topic-term vectors.
 

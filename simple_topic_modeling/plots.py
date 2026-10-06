@@ -237,35 +237,56 @@ def _pick_topic() -> alt.Parameter:
     return alt.selection_point(fields=["topic_id"], on="click", clear=False)
 
 
-def topic_map(result: TopicModelResult, selected: int | None = None) -> alt.Chart:
+def topic_map(result: TopicModelResult, selected: int | None = None) -> alt.LayerChart:
     """Place each topic on the 2-D map. Bubble size is the prevalence.
 
-    A click selects a topic. The selected bubble keeps full opacity and gains an outline.
+    Each bubble shows its topic number, so a reader can find a topic without its colour. A click
+    selects a topic. The selected bubble keeps full opacity and gains an outline. The data sits on
+    the layer chart, so the notebook can still read the click through the chart value.
 
     >>> from simple_topic_modeling.result import _example_result
-    >>> topic_map(_example_result()).to_dict()["mark"]["type"]
-    'circle'
+    >>> spec = topic_map(_example_result()).to_dict()
+    >>> [layer["mark"]["type"] for layer in spec["layer"]]
+    ['circle', 'text']
     """
     frame = topic_map_frame(result).assign(
-        selected=lambda data: (data["topic_id"] == selected).astype(int)
+        number=lambda data: data["topic_id"] + 1,
+        selected=lambda data: (data["topic_id"] == selected).astype(int),
+    )
+    bubbles = (
+        alt.Chart()
+        .mark_circle(stroke="#000")
+        .encode(
+            size=alt.Size("prevalence:Q", title="Prevalence", scale=alt.Scale(range=[100, 2000])),
+            color=alt.Color("topic:N", legend=None),
+        )
+        .add_params(_pick_topic())
+    )
+    numbers = (
+        alt.Chart()
+        .mark_text(fontWeight="bold", fontSize=12, color="#000")
+        .encode(text=alt.Text("number:Q"))
     )
     return (
-        alt.Chart(frame, title="Topic map")
-        .mark_circle(stroke="#000")
+        alt.layer(bubbles, numbers, data=frame, title="Topic map")
         .encode(
             **_emphasis(selected),
             x=alt.X("x:Q", axis=_blank_axis()),
             y=alt.Y("y:Q", axis=_blank_axis()),
-            size=alt.Size("prevalence:Q", title="Prevalence", scale=alt.Scale(range=[100, 2000])),
-            color=alt.Color("topic:N", legend=None),
             tooltip=[
+                alt.Tooltip("number:Q", title="Number"),
                 alt.Tooltip("topic:N", title="Topic"),
                 alt.Tooltip("top_terms:N", title="Top terms"),
                 alt.Tooltip("prevalence:Q", title="Prevalence", format=".1%"),
             ],
         )
-        .add_params(_pick_topic())
-        .properties(height=380)
+        .properties(
+            height=380,
+            description=(
+                "Topic map. Each circle is one topic and shows its number. The circle size shows"
+                " the prevalence. " + AXIS_NOTE
+            ),
+        )
     )
 
 

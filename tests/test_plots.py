@@ -113,9 +113,19 @@ def _spec(chart):
 
 
 def test_topic_map_marks_size_by_prevalence(result):
+    bubbles = _spec(topic_map(result))["layer"][0]
+    assert bubbles["mark"]["type"] == "circle"
+    assert bubbles["encoding"]["size"]["field"] == "prevalence"
+
+
+def test_topic_map_labels_each_bubble_with_its_number(result):
     spec = _spec(topic_map(result))
-    assert spec["mark"]["type"] == "circle"
-    assert spec["encoding"]["size"]["field"] == "prevalence"
+    numbers = spec["layer"][1]
+    assert numbers["mark"]["type"] == "text"
+    assert numbers["encoding"]["text"]["field"] == "number"
+    rows = spec["datasets"][spec["data"]["name"]]
+    assert [row["number"] for row in rows] == list(range(1, result.n_topics + 1))
+    assert "description" in spec
 
 
 def test_projection_axes_are_de_emphasized(result):

@@ -185,7 +185,7 @@ You can download six files:
 | `topic_terms.csv` | One row per topic and term, in long format |
 | `topic_similarity.csv` | The cosine similarity of each topic pair |
 | `config.json` | The settings that produced the result |
-| `project.zip` | The five files above, plus a `README.txt` |
+| `project.zip` | The five files above, a `README.txt`, and a `figures/` folder with every chart |
 
 ## Install
 

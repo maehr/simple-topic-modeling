@@ -11,9 +11,11 @@ import json
 import zipfile
 from typing import TYPE_CHECKING, Any
 
+import altair as alt
 import numpy as np
 import pandas as pd
 
+from simple_topic_modeling import plots
 from simple_topic_modeling.metrics import topic_similarity
 
 if TYPE_CHECKING:
@@ -25,6 +27,7 @@ __all__ = [
     "ZIP_README",
     "config_json",
     "documents_topics_frame",
+    "figure_files",
     "project_zip",
     "to_csv_bytes",
     "topic_similarity_frame",
@@ -55,9 +58,14 @@ topics.csv             one row per topic, with its name, prevalence and top term
 topic_terms.csv        long format, one row per topic and term
 topic_similarity.csv   cosine similarity between every pair of topics
 config.json            the settings that produced this result
+figures/               every chart of the app: HTML for the charts, PNG for the word clouds
 
 Topic scores are shares. Each document's scores sum to 1.
 The projection columns place a document on the 2-D map. The axes carry no meaning.
+Near points on a map use similar words. Read a distance as a hint, not as a measure.
+
+Open a figure in a web browser. An HTML figure loads the Vega libraries from cdn.jsdelivr.net,
+so it needs an internet connection. It sends none of your data.
 """
 
 
@@ -197,19 +205,97 @@ def config_json(config: AppConfig, topic_names: list[str] | None = None) -> byte
     return json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False).encode("utf-8")
 
 
+class _ScriptSafeEncoder(json.JSONEncoder):
+    r"""Escape `<`, `>`, and `&`, so a JSON value cannot end the `<script>` block of a page.
+
+    Altair writes the chart JSON into the page as it is. A topic name or a document ID such as
+    `</script>` would otherwise close the block and run as markup in the reader's browser.
+
+    >>> json.dumps({"name": "</script>"}, cls=_ScriptSafeEncoder)
+    '{"name": "\\u003c/script\\u003e"}'
+    """
+
+    def encode(self, o: object) -> str:
+        """Encode `o`, then escape the three characters that HTML can read as markup."""
+        text = super().encode(o)
+        return text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+
+def figure_files(result: TopicModelResult, include_text: bool = False) -> dict[str, bytes]:
+    r"""Render every chart of the result view as a file that opens without the app.
+
+    An Altair chart becomes a standalone HTML page. A word cloud stays a PNG. A chart that needs
+    a metadata column, or the long-text mode, appears only when its data exists. Without
+    `include_text`, the document map holds no snippet, as `documents_topics.csv` holds no text.
+
+    >>> from simple_topic_modeling.result import _example_result
+    >>> files = figure_files(_example_result())
+    >>> list(files)[:5]
+    ['topic_map.html', 'topic_prevalence.html', 'topic_similarity.html', 'document_map.html',
+     'dominant_topic_score_distribution.html']
+    >>> files["topic_01_wordcloud.png"][:4]
+    b'\x89PNG'
+    """
+    documents = plots.document_frame(result)
+    if not include_text:
+        documents = documents.drop(columns=["snippet"])
+    scores = pd.DataFrame({"score": result.dominant_topic_score})
+    charts: dict[str, Any] = {
+        "topic_map.html": plots.topic_map(result),
+        "topic_prevalence.html": plots.prevalence_bars(result),
+        "topic_similarity.html": plots.similarity_heatmap(result),
+        "document_map.html": plots.document_scatter(documents),
+        "dominant_topic_score_distribution.html": plots.score_histogram(scores),
+    }
+    columns = result.metadata.columns
+    if "group" in columns:
+        charts["group_shares.html"] = plots.group_stacked_bars(
+            plots.group_share_frame(result, "group")
+        )
+    if "date" in columns:
+        parsed, unparsed = plots.parse_dates(result.metadata["date"])
+        if len(parsed) > unparsed:
+            frame = plots.time_share_frame(result, parsed, plots.choose_date_bin(parsed))
+            charts["topic_shares_over_time.html"] = plots.time_line_chart(frame)
+    positions = None
+    if result.config.get("analyse_as") == "long_document":
+        positions = plots.position_frame(result)
+        charts["topic_positions.html"] = plots.position_heatmap(positions, result.topic_names)
+    for topic in range(result.n_topics):
+        prefix = f"topic_{topic + 1:02d}"
+        charts[f"{prefix}_top_terms.html"] = plots.top_term_bars(result, topic)
+        if positions is not None:
+            charts[f"{prefix}_positions.html"] = plots.topic_position_area(positions, topic)
+
+    # The default transformer writes the data into the page, so the file needs no server. A
+    # long text gives a position chart above the default limit of 5,000 rows. Altair types
+    # `PluginEnabler.__exit__` without `None`, so ty rejects a valid `with`.
+    with alt.data_transformers.enable("default", max_rows=None):  # ty: ignore[invalid-context-manager]
+        files = {
+            name: chart.to_html(json_kwds={"cls": _ScriptSafeEncoder}).encode("utf-8")
+            for name, chart in charts.items()
+        }
+    for topic in range(result.n_topics):
+        files[f"topic_{topic + 1:02d}_wordcloud.png"] = plots.word_cloud_png(result, topic)
+    return files
+
+
 def project_zip(result: TopicModelResult, config: AppConfig, include_text: bool = False) -> bytes:
     """Bundle every export into `project.zip`.
 
-    `SPECS.md` section 7 names the six entries. The bundle is built in memory with the standard
-    `zipfile` module.
+    `SPECS.md` section 7 names the six entries and the `figures/` folder. The bundle is built in
+    memory with the standard `zipfile` module.
 
     >>> import zipfile, io
     >>> from simple_topic_modeling.config import AppConfig
     >>> from simple_topic_modeling.result import _example_result
     >>> data = project_zip(_example_result(), AppConfig())
-    >>> zipfile.ZipFile(io.BytesIO(data)).namelist()
+    >>> names = zipfile.ZipFile(io.BytesIO(data)).namelist()
+    >>> [name for name in names if not name.startswith("figures/")]
     ['documents_topics.csv', 'topics.csv', 'topic_terms.csv',
      'topic_similarity.csv', 'config.json', 'README.txt']
+    >>> "figures/topic_map.html" in names
+    True
     """
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -221,4 +307,6 @@ def project_zip(result: TopicModelResult, config: AppConfig, include_text: bool 
         archive.writestr("topic_similarity.csv", to_csv_bytes(topic_similarity_frame(result)))
         archive.writestr("config.json", config_json(config, result.topic_names))
         archive.writestr("README.txt", ZIP_README)
+        for name, data in figure_files(result, include_text).items():
+            archive.writestr(f"figures/{name}", data)
     return buffer.getvalue()

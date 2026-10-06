@@ -1691,8 +1691,11 @@ def _(AppConfig, display_result, exports, include_text, mo):
         # Export the settings of the fitted result, not the live controls. A changed control
         # would otherwise describe a run that did not make these files.
         _config = AppConfig.model_validate(display_result.config)
+        _include_text = include_text.value
+        # The figures include one word cloud per topic, which is slow under Pyodide. A callable
+        # builds the package only when the reader clicks the button.
         _package = mo.download(
-            data=exports.project_zip(display_result, _config, include_text.value),
+            data=lambda: exports.project_zip(display_result, _config, _include_text),
             filename="project.zip",
             label="Download complete research package (.zip)",
             mimetype="application/zip",
@@ -1734,7 +1737,8 @@ def _(AppConfig, display_result, exports, include_text, mo):
             [
                 _package,
                 mo.md(
-                    "The package holds every table, the settings to repeat the run, and a README."
+                    "The package holds every table, every figure, the settings to repeat the run,"
+                    " and a README."
                 ),
                 include_text,
                 mo.accordion({"Individual files": mo.vstack(_buttons, gap=0.5, align="start")}),

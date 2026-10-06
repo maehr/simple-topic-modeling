@@ -241,8 +241,9 @@ def topic_map(result: TopicModelResult, selected: int | None = None) -> alt.Laye
     """Place each topic on the 2-D map. Bubble size is the prevalence.
 
     Each bubble shows its topic number, so a reader can find a topic without its colour. A click
-    selects a topic. The selected bubble keeps full opacity and gains an outline. The data sits on
-    the layer chart, so the notebook can still read the click through the chart value.
+    selects a topic. The selected bubble keeps full opacity and gains an outline. The selection
+    dims the bubbles only, so every number keeps its contrast. The data sits on the layer chart,
+    so the notebook can still read the click through the chart value.
 
     >>> from simple_topic_modeling.result import _example_result
     >>> spec = topic_map(_example_result()).to_dict()
@@ -257,6 +258,7 @@ def topic_map(result: TopicModelResult, selected: int | None = None) -> alt.Laye
         alt.Chart()
         .mark_circle(stroke="#000")
         .encode(
+            **_emphasis(selected),
             size=alt.Size("prevalence:Q", title="Prevalence", scale=alt.Scale(range=[100, 2000])),
             color=alt.Color("topic:N", legend=None),
         )
@@ -270,7 +272,6 @@ def topic_map(result: TopicModelResult, selected: int | None = None) -> alt.Laye
     return (
         alt.layer(bubbles, numbers, data=frame, title="Topic map")
         .encode(
-            **_emphasis(selected),
             x=alt.X("x:Q", axis=_blank_axis()),
             y=alt.Y("y:Q", axis=_blank_axis()),
             tooltip=[

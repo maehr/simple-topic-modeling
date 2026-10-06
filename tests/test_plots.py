@@ -112,6 +112,11 @@ def _spec(chart):
     return chart.to_dict()
 
 
+def _marks(spec):
+    """Return the encoding of the marks that carry the selection: the bubbles on a layer chart."""
+    return spec["layer"][0]["encoding"] if "layer" in spec else spec["encoding"]
+
+
 def test_topic_map_marks_size_by_prevalence(result):
     bubbles = _spec(topic_map(result))["layer"][0]
     assert bubbles["mark"]["type"] == "circle"
@@ -126,6 +131,8 @@ def test_topic_map_labels_each_bubble_with_its_number(result):
     rows = spec["datasets"][spec["data"]["name"]]
     assert [row["number"] for row in rows] == list(range(1, result.n_topics + 1))
     assert "description" in spec
+    assert "fillOpacity" not in numbers["encoding"]
+    assert "fillOpacity" not in _spec(topic_map(result, 1))["layer"][1]["encoding"]
 
 
 def test_projection_axes_are_de_emphasized(result):
@@ -249,8 +256,8 @@ def test_selected_topic_is_marked_in_every_data_view(result):
         spec = _spec(chart)
         rows = spec["datasets"][spec["data"]["name"]]
         assert [row["selected"] for row in rows] == [i == 1 for i in range(result.n_topics)]
-        assert "condition" in spec["encoding"]["fillOpacity"]
-        assert "condition" in spec["encoding"]["strokeWidth"]
+        assert "condition" in _marks(spec)["fillOpacity"]
+        assert "condition" in _marks(spec)["strokeWidth"]
     heat = _spec(similarity_heatmap(result, 0))
     rows = heat["datasets"][heat["data"]["name"]]
     assert [row["selected"] for row in rows] == [
@@ -262,8 +269,8 @@ def test_selected_topic_is_marked_in_every_data_view(result):
 def test_no_selection_dims_nothing(result):
     for chart in (topic_map(result), prevalence_bars(result), similarity_heatmap(result)):
         spec = _spec(chart)
-        assert spec["encoding"]["fillOpacity"]["value"] == 0.85
-        assert spec["encoding"]["strokeWidth"]["value"] == 0
+        assert _marks(spec)["fillOpacity"]["value"] == 0.85
+        assert _marks(spec)["strokeWidth"]["value"] == 0
 
 
 def test_topic_card_html_shows_a_custom_name_verbatim():

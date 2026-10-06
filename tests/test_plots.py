@@ -6,7 +6,11 @@ from simple_topic_modeling.config import AppConfig, ModelConfig
 from simple_topic_modeling.io import build_corpus
 from simple_topic_modeling.modeling import fit_topic_model
 from simple_topic_modeling.plots import (
+    AXIS_NOTE,
+    DOCUMENT_MAP_HELP,
+    DOCUMENT_SAMPLE_LIMIT,
     SNIPPET_LENGTH,
+    TOPIC_MAP_HELP,
     document_frame,
     document_scatter,
     heading_html,
@@ -278,3 +282,19 @@ def test_topic_card_html_shows_a_custom_name_verbatim():
     assert "<strong>**Finance** _y_ &lt;i&gt;z&lt;/i&gt;</strong><br>" in card
     assert "a &lt;b&gt;<br>12.5% of the corpus · 3 documents" in card
     assert "(selected)" not in card
+
+
+def test_both_map_guides_explain_the_axes_and_the_limits():
+    for guide in (TOPIC_MAP_HELP, DOCUMENT_MAP_HELP):
+        assert AXIS_NOTE in guide
+        assert "Read a distance as a hint" in guide
+
+
+def test_the_document_map_guide_names_the_sample_limit():
+    assert f"{DOCUMENT_SAMPLE_LIMIT:,}" in DOCUMENT_MAP_HELP
+    assert "SVD" in DOCUMENT_MAP_HELP
+
+
+def test_both_maps_carry_a_description(result):
+    for chart in (topic_map(result), document_scatter(document_frame(result))):
+        assert AXIS_NOTE in _spec(chart)["description"]

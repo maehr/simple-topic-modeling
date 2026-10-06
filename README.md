@@ -270,14 +270,10 @@ uv run pytest --doctest-modules --cov --cov-fail-under=100
 ```
 
 Check the notebook after you edit it. `marimo check` does not find a name that two cells both define.
+The test checks every cell parameter. It also runs the result view with a fitted demo result.
 
 ```bash
-uv run python -c "
-import importlib.util, sys
-spec = importlib.util.spec_from_file_location('notebook_app', 'app.py')
-module = importlib.util.module_from_spec(spec); sys.modules['notebook_app'] = module
-spec.loader.exec_module(module); module.app.run(); print('cells ok')
-"
+uv run pytest tests/test_notebook.py --no-cov
 ```
 
 Build the export and open it in a browser before you call the work done. The notebook and the export
